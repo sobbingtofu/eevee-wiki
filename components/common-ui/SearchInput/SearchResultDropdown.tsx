@@ -1,11 +1,9 @@
 import TypeChip from "../TypeChip/TypeChip";
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type resultItem = any[]; // 검색 결과 항목의 타입에 맞게 수정
+import {SampleSearchResultItem} from "./SearchInput";
 
 interface SearchResultDropdownProps {
-  searchResults: resultItem; // 검색 결과 데이터 타입에 맞게 수정
-  onResultItemClick: (resultItem: resultItem) => void; // 검색 결과 항목 클릭 시 호출되는 콜백 함수, 필요에 따라 수정
+  searchResults: SampleSearchResultItem[]; // 검색 결과 데이터 타입에 맞게 수정
+  onResultItemClick: (resultItem: SampleSearchResultItem) => void; // 검색 결과 항목 클릭 시 호출되는 콜백 함수, 필요에 따라 수정
   accentedItemIndex?: number; // 방향키로 선택된 검색 결과 항목의 인덱스, 필요에 따라 수정
 }
 

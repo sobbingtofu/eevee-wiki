@@ -4,8 +4,15 @@ import {useEffect, useRef, useState} from "react";
 import {Loader} from "../Loader/Loader";
 import {CloseIcon} from "../CloseIcon/CloseIcon";
 import SearchResultDropdown from "./SearchResultDropdown";
+import {pokemonType} from "@/types/pokemonDataType";
 
-const SAMPLE = [
+export interface SampleSearchResultItem {
+  korName: string;
+  damageClass: string;
+  type: pokemonType;
+}
+
+const SAMPLE: SampleSearchResultItem[] = [
   {korName: "칼춤", damageClass: "변화", type: "normal"},
   {korName: "용의춤", damageClass: "변화", type: "dragon"},
   {korName: "신속", damageClass: "물리", type: "normal"},
@@ -22,8 +29,7 @@ const SAMPLE = [
 
 interface SearchInputProps {
   outSideClickDropdownClose?: boolean; // 드롭다운 외부 클릭 시 드롭다운 닫기 기능 활성화 여부
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  handleClickDropdownItem?: (resultItem: any) => void; // 검색 결과 항목 클릭 시 호출되는 콜백 함수, 필요에 따라 수정
+  handleClickDropdownItem?: (resultItem: SampleSearchResultItem) => void; // 검색 결과 항목 클릭 시 호출되는 콜백 함수, 필요에 따라 수정
 }
 
 function SearchInput({

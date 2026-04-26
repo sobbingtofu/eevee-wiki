@@ -9,7 +9,7 @@ function TopNaviBar() {
   const router = useRouter();
 
   const getNavClassName = (isActive: boolean) =>
-    `transition-colors cursor-pointer ${isActive ? "text-primary2 font-bold " : "text-gray-400 hover:text-textWhite font-semibold"}`;
+    `transition-colors cursor-pointer ${isActive ? "text-primary1 font-bold " : "text-gray-400 hover:text-textWhite font-semibold"}`;
 
   const handleNavBtnClick = (path: string) => {
     router.push(path);
@@ -22,7 +22,7 @@ function TopNaviBar() {
         <div className="flex justify-start items-center gap-4">
           {/* 로고 */}
           <div className="w-10 h-10 relative ">
-            <Image src="/icon/eevee01.png" alt="logo" fill className="object-cover" />
+            <Image src="/icon/eevee01.png" alt="logo" fill className="object-cover" sizes="40px" priority />
           </div>
 
           {/* 텍스트 */}
