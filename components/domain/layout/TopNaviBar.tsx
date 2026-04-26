@@ -9,7 +9,7 @@ function TopNaviBar() {
   const router = useRouter();
 
   const getNavClassName = (isActive: boolean) =>
-    `transition-colors cursor-pointer ${isActive ? "text-gray-200" : "text-gray-400 hover:text-textWhite "}`;
+    `transition-colors cursor-pointer ${isActive ? "text-primary2 font-bold " : "text-gray-400 hover:text-textWhite font-semibold"}`;
 
   const handleNavBtnClick = (path: string) => {
     router.push(path);
@@ -21,7 +21,7 @@ function TopNaviBar() {
       <Link href="/search-learning-pokemons" className="w-fit h-fit">
         <div className="flex justify-start items-center gap-4">
           {/* 로고 */}
-          <div className="w-10 h-10 relative">
+          <div className="w-10 h-10 relative ">
             <Image src="/icon/eevee01.png" alt="logo" fill className="object-cover" />
           </div>
 
