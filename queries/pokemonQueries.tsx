@@ -79,6 +79,7 @@ export function useSearchPokemons(query: string) {
  * //   stats: [{ statName: "hp", statValue: 72 }, ...],
  * //   evStats: [{ statName: "speed", evValue: 3 }],
  * //   abilities: [{ displayName: "변환자재", displayDescription: "...", isHidden: false }]
+ * //   evolutionChainUrl: "/api/evolution-chains/67"
  * // }
  */
 export function usePokemonDetail(id: number | null) {

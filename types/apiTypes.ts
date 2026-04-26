@@ -151,7 +151,7 @@ export interface PokemonAbilityInfo {
 
 /**
  * GET /api/pokemons/[id]
- * 포켓몬 상세 페이지 기본 정보 (이름, 이미지, 스탯, 타입, 특성)
+ * 포켓몬 상세 페이지 기본 정보 (이름, 이미지, 스탯, 타입, 특성, 진화체인 등)
  * 기술 목록은 아래 별도 쿼리로 분리 >> GET /api/pokemons/[id]/moves?gen=9
  */
 export interface PokemonDetail {
