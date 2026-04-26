@@ -6,9 +6,10 @@ type resultItem = any[]; // 검색 결과 항목의 타입에 맞게 수정
 interface SearchResultDropdownProps {
   searchResults: resultItem; // 검색 결과 데이터 타입에 맞게 수정
   onResultItemClick: (resultItem: resultItem) => void; // 검색 결과 항목 클릭 시 호출되는 콜백 함수, 필요에 따라 수정
+  accentedItemIndex?: number; // 방향키로 선택된 검색 결과 항목의 인덱스, 필요에 따라 수정
 }
 
-function SearchResultDropdown({searchResults, onResultItemClick}: SearchResultDropdownProps) {
+function SearchResultDropdown({searchResults, onResultItemClick, accentedItemIndex = -1}: SearchResultDropdownProps) {
   return (
     <>
       {searchResults.length === 0 && (
@@ -22,7 +23,9 @@ function SearchResultDropdown({searchResults, onResultItemClick}: SearchResultDr
             {searchResults.map((resultItem, index) => (
               <div
                 key={index}
-                className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm text-gray-800 flex items-center justify-between"
+                className={`px-4 py-2 hover:bg-cyan-200 cursor-pointer text-sm text-gray-800 flex items-center justify-between
+                  rounded-lg
+                  ${index === accentedItemIndex ? "bg-cyan-100" : ""}`}
                 onClick={() => onResultItemClick(resultItem)}
               >
                 <div>{resultItem.korName}</div>
