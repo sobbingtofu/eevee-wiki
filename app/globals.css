@@ -2,6 +2,58 @@
 
 @theme {
   --color-background: #0e172a;
+  --color-backgroundLight: #1f2a3e;
+
   --color-textWhite: #f1f5f9;
+  --color-textGray: #94a3b8;
+
   --color-primary2: #3b82f6;
+
+  --color-fighting: #ffa202;
+  --color-poison: #994dcf;
+  --color-ground: #ab7939;
+  --color-flying: #95c9ff;
+  --color-psychic: #ff637f;
+  --color-bug: #9fa424;
+  --color-rock: #bcb889;
+  --color-ghost: #6e4570;
+  --color-dragon: #5462d6;
+  --color-dark: #4f4747;
+  --color-steel: #6aaed3;
+  --color-fairy: #ffb1ff;
+  --color-normal: #999999;
+  --color-fire: #ff612c;
+  --color-water: #2992ff;
+  --color-electric: #ebce16;
+  --color-grass: #42bf24;
+  --color-ice: #42bfff;
+
+  --color-fighting-shallow: #ffe0a6;
+  --color-poison-shallow: #ddb3ed;
+  --color-ground-shallow: #e0c89e;
+  --color-flying-shallow: #d6e9ff;
+  --color-psychic-shallow: #ffc4d1;
+  --color-bug-shallow: #d2dc7f;
+  --color-rock-shallow: #e2dcc7;
+  --color-ghost-shallow: #c0a8c4;
+  --color-dragon-shallow: #b6beed;
+  --color-dark-shallow: #b8b0b0;
+  --color-steel-shallow: #c5dced;
+  --color-fairy-shallow: #ffe6ff;
+  --color-normal-shallow: #e3e3e3;
+  --color-fire-shallow: #ffbc94;
+  --color-water-shallow: #94d1ff;
+  --color-electric-shallow: #fff094;
+  --color-grass-shallow: #a1dc84;
+  --color-ice-shallow: #a1dcff;
+}
+
+@layer base {
+  body {
+    color: var(--color-textGray);
+  }
+
+  [class*="text-"] * {
+    color: inherit;
+  }
 }
