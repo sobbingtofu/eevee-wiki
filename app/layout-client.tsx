@@ -1,4 +1,5 @@
 "use client";
+import TopNaviBar from "@/components/domain/layout/TopNaviBar";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import {ReactNode} from "react";
 
@@ -7,8 +8,9 @@ export default function RootLayoutClient({children}: {children: ReactNode}) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="flex flex-col w-screen h-screen overflow-hidden">
-        <main className="flex-1 overflow-y-auto overflow-x-hidden">{children}</main>
+      <div className="w-screen h-screen overflow-hidden relative">
+        <TopNaviBar />
+        <main className="w-full h-full overflow-y-auto overflow-x-hidden pt-16 bg-background ">{children}</main>
       </div>
     </QueryClientProvider>
   );
