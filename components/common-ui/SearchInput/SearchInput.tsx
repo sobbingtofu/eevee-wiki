@@ -36,6 +36,7 @@ function SearchInput({
   outSideClickDropdownClose = true,
   handleClickDropdownItem = (item) => {
     console.log("handleClickDropdownItem not defined. clicked item : ", item);
+    return;
   },
 }: SearchInputProps) {
   const [searchValue, setSearchValue] = useState("");
@@ -49,7 +50,6 @@ function SearchInput({
   const inputRef = useRef<HTMLInputElement>(null);
   const inputDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
-  const isComposingRef = useRef(false);
 
   const searchResults = searchValue === "" ? [] : SAMPLE.filter((item) => item.korName.includes(searchValue));
 
@@ -57,6 +57,7 @@ function SearchInput({
     setIsDebouncing(false);
     if (searchResults.length > 0 && accentedDropdownItemIndex === -1) {
       setAccentedDropdownItemIndex(0);
+      return;
     } else if (searchResults.length > 0 && accentedDropdownItemIndex >= 0) {
       const accentedItem = searchResults[accentedDropdownItemIndex];
       if (accentedItem) {
@@ -95,11 +96,6 @@ function SearchInput({
    * - 검색값이 업데이트 될 때, 검색값이 빈 문자열이 아니면 드롭다운을 열고, 빈 문자열이면 드롭다운을 닫음
    */
   const handleKeyDownSearchInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    const isImeComposing = isComposingRef.current || e.nativeEvent.isComposing;
-    if (isImeComposing || e.key === "Process") {
-      return;
-    }
-
     if (e.key === "Enter") {
       e.preventDefault();
       handleEnterKeyDown();
@@ -120,7 +116,8 @@ function SearchInput({
         if (inputRef.current?.value !== "") {
           setIsDropdownOpen(true);
         } else {
-          // setIsDropdownOpen(false);
+          setIsDropdownOpen(false);
+          setAccentedDropdownItemIndex(-1);
         }
       }, 400);
     }
@@ -144,6 +141,7 @@ function SearchInput({
       const handleClickOutside = (event: MouseEvent) => {
         if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
           setIsDropdownOpen(false);
+          setAccentedDropdownItemIndex(-1);
         }
       };
 
@@ -168,12 +166,6 @@ function SearchInput({
         <input
           ref={inputRef}
           onFocus={handleInputFocus}
-          onCompositionStart={() => {
-            isComposingRef.current = true;
-          }}
-          onCompositionEnd={() => {
-            isComposingRef.current = false;
-          }}
           onKeyDown={handleKeyDownSearchInput}
           className="w-full pl-4 pr-10 py-4 rounded-2xl border-0 ring-1 ring-slate-200 dark:ring-slate-700 bg-white dark:bg-slate-900
           focus:ring-2 focus:ring-primary transition-all shadow-sm text-black text-sm relative"
