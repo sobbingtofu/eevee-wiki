@@ -1,0 +1,62 @@
+/**
+ * GET /api/moves/[id]/brief
+ *
+ * 특정 기술의 간략 정보 반환 (기술 바구니 표시용)
+ *
+ * @param id - 기술 id (경로 파라미터)
+ * @returns MoveBrief - { id, koreanName, korType, power, accuracy, damageClass }
+ */
+import {NextRequest, NextResponse} from "next/server";
+import {supabaseServer} from "@/lib/supabase/server";
+import {fetchTypeMap} from "@/lib/supabase/queryHelpers";
+import type {MoveBrief, ApiErrorResponse, DamageClass} from "@/types/apiTypes";
+
+interface MoveRow {
+  id: number;
+  koreanName: string | null;
+  typeId: number | null;
+  power: number | null;
+  accuracy: number | null;
+  damageClass: DamageClass | null;
+}
+
+export async function GET(_request: NextRequest, {params}: {params: Promise<{id: string}>}) {
+  const {id: rawId} = await params;
+  const id = Number(rawId);
+
+  if (!Number.isInteger(id) || id <= 0) {
+    return NextResponse.json<ApiErrorResponse>({error: "유효하지 않은 기술 ID입니다."}, {status: 400});
+  }
+
+  // ── Step 1: 기술 기본 정보 조회 ─────────────────────────────
+  const {data: move, error: moveErr} = await supabaseServer
+    .from("TB_MOVES")
+    .select("id, koreanName, typeId, power, accuracy, damageClass")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (moveErr) {
+    console.error("[moves/brief] TB_MOVES 조회 오류:", moveErr.message);
+    return NextResponse.json<ApiErrorResponse>({error: "기술 정보 조회 중 오류가 발생했습니다."}, {status: 500});
+  }
+
+  if (!move) {
+    return NextResponse.json<ApiErrorResponse>({error: `ID ${id}에 해당하는 기술을 찾을 수 없습니다.`}, {status: 404});
+  }
+
+  const m = move as MoveRow;
+
+  // ── Step 2: typeId → 한국어 타입명 조회 ─────────────────────
+  const typeMap = m.typeId != null ? await fetchTypeMap([m.typeId]) : new Map<number, string>();
+
+  const result: MoveBrief = {
+    id: m.id,
+    koreanName: m.koreanName ?? m.id.toString(),
+    korType: m.typeId != null ? (typeMap.get(m.typeId) ?? "???") : "???",
+    power: m.power,
+    accuracy: m.accuracy,
+    damageClass: m.damageClass ?? "status",
+  };
+
+  return NextResponse.json<MoveBrief>(result);
+}

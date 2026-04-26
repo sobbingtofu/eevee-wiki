@@ -43,6 +43,3 @@ export type pokemonTypeKor =
   | "스텔라"
   | "???"
   | "섀도우";
-
-export type damageClass = "physical" | "special" | "status";
-export type damageClassKor = "물리" | "특수" | "변화";

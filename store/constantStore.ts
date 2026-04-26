@@ -1,4 +1,5 @@
-import {damageClass, damageClassKor, pokemonType, pokemonTypeKor} from "@/types/pokemonDataType";
+import {DamageClass, DamageClassKor} from "@/types/apiTypes";
+import {pokemonType, pokemonTypeKor} from "@/types/pokemonDataType";
 
 export const TYPE_MAP: {[key in pokemonType]: pokemonTypeKor} = {
   normal: "노말",
@@ -48,7 +49,7 @@ export const TYPE_BG_CLASS_MAP: {[key in pokemonType]: string} = {
   shadow: "bg-gray-500",
 };
 
-export const DAMAGE_CLASS_MAP: {[key in damageClass]: damageClassKor} = {
+export const DAMAGE_CLASS_MAP: {[key in DamageClass]: DamageClassKor} = {
   physical: "물리",
   special: "특수",
   status: "변화",
