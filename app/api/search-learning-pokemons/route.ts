@@ -16,13 +16,9 @@
  *   3. 모든 집합의 교집합(intersection) 계산
  *   4. 교집합 포켓몬들의 기본정보 + 타입 + 기술별 학습방법 조회
  */
-import { NextRequest, NextResponse } from "next/server";
-import { supabaseServer } from "@/lib/supabase/server";
-import {
-  fetchGenVersionNames,
-  fetchPokemonTypesMap,
-  fetchLearnInfoMap,
-} from "@/lib/supabase/queryHelpers";
+import {NextRequest, NextResponse} from "next/server";
+import {supabaseServer} from "@/lib/supabase/server";
+import {fetchGenVersionNames, fetchPokemonTypesMap, fetchLearnInfoMap} from "@/lib/supabase/queryHelpers";
 import type {
   SearchLearningPokemonsRequest,
   SearchLearningPokemonsResponse,
@@ -40,37 +36,28 @@ interface PokemonRow {
   evStats: EvStatEntry[] | null;
 }
 
-export async function POST(request: NextRequest) {
-  // ── 요청 파싱 및 유효성 검사 ─────────────────────────────────
+export async function GET(request: NextRequest) {
+  // Step 0: 요청 파싱 및 유효성 검사
   let body: SearchLearningPokemonsRequest;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json<ApiErrorResponse>(
-      { error: "요청 본문이 유효한 JSON이 아닙니다." },
-      { status: 400 }
-    );
+    return NextResponse.json<ApiErrorResponse>({error: "요청 본문이 유효한 JSON이 아닙니다."}, {status: 400});
   }
 
-  const { moveIds, genNumber } = body;
+  const {moveIds, genNumber} = body;
 
   if (!Array.isArray(moveIds) || moveIds.length === 0) {
     return NextResponse.json<ApiErrorResponse>(
-      { error: "moveIds는 1개 이상의 기술 ID 배열이어야 합니다." },
-      { status: 400 }
+      {error: "moveIds는 1개 이상의 기술 ID 배열이어야 합니다."},
+      {status: 400},
     );
   }
   if (moveIds.some((id) => !Number.isInteger(id) || id <= 0)) {
-    return NextResponse.json<ApiErrorResponse>(
-      { error: "moveIds의 모든 값은 양의 정수여야 합니다." },
-      { status: 400 }
-    );
+    return NextResponse.json<ApiErrorResponse>({error: "moveIds의 모든 값은 양의 정수여야 합니다."}, {status: 400});
   }
   if (!Number.isInteger(genNumber) || genNumber < 1 || genNumber > 9) {
-    return NextResponse.json<ApiErrorResponse>(
-      { error: "genNumber는 1~9 사이의 정수여야 합니다." },
-      { status: 400 }
-    );
+    return NextResponse.json<ApiErrorResponse>({error: "genNumber는 1~9 사이의 정수여야 합니다."}, {status: 400});
   }
 
   // ── Step 1: 해당 세대의 버전명 목록 ──────────────────────────
@@ -81,14 +68,14 @@ export async function POST(request: NextRequest) {
 
   // ── Step 2: 각 moveId별 배우는 pokemonId 집합을 병렬 조회 ────
   const idSetPromises = moveIds.map(async (moveId): Promise<Set<number>> => {
-    const { data, error } = await supabaseServer
+    const {data, error} = await supabaseServer
       .from("TB_CXN_POKEMON_MOVES")
       .select("pokemonId")
       .eq("moveId", moveId)
       .in("versionName", versionNames);
 
     if (error || !data) return new Set();
-    return new Set((data as { pokemonId: number }[]).map((r) => r.pokemonId));
+    return new Set((data as {pokemonId: number}[]).map((r) => r.pokemonId));
   });
 
   const idSets = await Promise.all(idSetPromises);
@@ -99,9 +86,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json<SearchLearningPokemonsResponse>([]);
   }
 
-  const qualifyingIds: Set<number> = idSets.reduce(
-    (acc, set) => new Set([...acc].filter((id) => set.has(id)))
-  );
+  const qualifyingIds: Set<number> = idSets.reduce((acc, set) => new Set([...acc].filter((id) => set.has(id))));
 
   if (qualifyingIds.size === 0) {
     return NextResponse.json<SearchLearningPokemonsResponse>([]);
@@ -110,7 +95,7 @@ export async function POST(request: NextRequest) {
   const pokemonIds = [...qualifyingIds];
 
   // ── Step 4: 포켓몬 기본 정보 조회 ────────────────────────────
-  const { data: pokemons, error: pokErr } = await supabaseServer
+  const {data: pokemons, error: pokErr} = await supabaseServer
     .from("TB_POKEMONS")
     .select("pokemonId, koreanName, spriteUrl, stats, evStats")
     .in("pokemonId", pokemonIds)
@@ -118,10 +103,7 @@ export async function POST(request: NextRequest) {
 
   if (pokErr) {
     console.error("[search-learning-pokemons] 포켓몬 정보 조회 오류:", pokErr.message);
-    return NextResponse.json<ApiErrorResponse>(
-      { error: "포켓몬 정보 조회 중 오류가 발생했습니다." },
-      { status: 500 }
-    );
+    return NextResponse.json<ApiErrorResponse>({error: "포켓몬 정보 조회 중 오류가 발생했습니다."}, {status: 500});
   }
 
   if (!pokemons || pokemons.length === 0) {
@@ -136,27 +118,25 @@ export async function POST(request: NextRequest) {
   const learnInfoMap = await fetchLearnInfoMap(pokemonIds, moveIds, versionNames);
 
   // ── 응답 조립 ────────────────────────────────────────────────
-  const result: SearchLearningPokemonsResponse = (pokemons as PokemonRow[]).map(
-    (p): LearningPokemonItem => {
-      const pokemonLearnMap = learnInfoMap.get(p.pokemonId) ?? new Map();
+  const result: SearchLearningPokemonsResponse = (pokemons as PokemonRow[]).map((p): LearningPokemonItem => {
+    const pokemonLearnMap = learnInfoMap.get(p.pokemonId) ?? new Map();
 
-      // Record<moveId_string, MoveLearnEntry[]>
-      const moveLearnInfo: LearningPokemonItem["moveLearnInfo"] = {};
-      for (const moveId of moveIds) {
-        moveLearnInfo[moveId.toString()] = pokemonLearnMap.get(moveId) ?? [];
-      }
-
-      return {
-        pokemonId: p.pokemonId,
-        koreanName: p.koreanName ?? p.pokemonId.toString(),
-        spriteUrl: p.spriteUrl,
-        korTypes: typesMap.get(p.pokemonId) ?? [],
-        stats: p.stats ?? [],
-        evStats: p.evStats ?? [],
-        moveLearnInfo,
-      };
+    // Record<moveId_string, MoveLearnEntry[]>
+    const moveLearnInfo: LearningPokemonItem["moveLearnInfo"] = {};
+    for (const moveId of moveIds) {
+      moveLearnInfo[moveId.toString()] = pokemonLearnMap.get(moveId) ?? [];
     }
-  );
+
+    return {
+      pokemonId: p.pokemonId,
+      koreanName: p.koreanName ?? p.pokemonId.toString(),
+      spriteUrl: p.spriteUrl,
+      korTypes: typesMap.get(p.pokemonId) ?? [],
+      stats: p.stats ?? [],
+      evStats: p.evStats ?? [],
+      moveLearnInfo,
+    };
+  });
 
   return NextResponse.json<SearchLearningPokemonsResponse>(result);
 }

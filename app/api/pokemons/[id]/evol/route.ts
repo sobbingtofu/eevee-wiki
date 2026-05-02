@@ -4,7 +4,7 @@
  * 특정 포켓몬이 속한 진화 체인 전체 반환
  * (포켓몬 상세 페이지 — 진화 체인 UI 렌더링용)
  *
- * 데이터 소스: TB_CXN_EVOLUTIONS (스크립트로 사전 수집·저장된 데이터)
+ * 데이터 소스: TB_CXN_EVOLUTIONS
  *
  * @param id - pokemonId (경로 파라미터)
  * @returns PokemonEvolutionChainResponse
@@ -44,35 +44,29 @@ import type {
 
 // ── DB 로우 형태 ──────────────────────────────────────────────────
 interface EvolRow {
-  evolutionChainId:   number;
-  chainLevel:         number;
-  pokemonId:          number;
-  speciesNameEn:      string;
-  speciesNameKo:      string | null;
-  varietyNameEn:      string;
-  varietyNameKo:      string | null;
-  varietyKeyword:     string;
-  spriteUrl:          string | null;
+  evolutionChainId: number;
+  chainLevel: number;
+  pokemonId: number;
+  speciesNameEn: string;
+  speciesNameKo: string | null;
+  varietyNameEn: string;
+  varietyNameKo: string | null;
+  varietyKeyword: string;
+  spriteUrl: string | null;
   officialArtworkUrl: string | null;
-  parentPokemonId:    number | null;
-  evolutionDetails:   EvolutionDetailEntry[] | null;
+  parentPokemonId: number | null;
+  evolutionDetails: EvolutionDetailEntry[] | null;
 }
 
-export async function GET(
-  _request: NextRequest,
-  {params}: {params: Promise<{id: string}>}
-) {
+export async function GET(_request: NextRequest, {params}: {params: Promise<{id: string}>}) {
   const {id: rawId} = await params;
   const pokemonId = Number(rawId);
 
   if (!Number.isInteger(pokemonId) || pokemonId <= 0) {
-    return NextResponse.json<ApiErrorResponse>(
-      {error: "유효하지 않은 포켓몬 ID입니다."},
-      {status: 400}
-    );
+    return NextResponse.json<ApiErrorResponse>({error: "유효하지 않은 포켓몬 ID입니다."}, {status: 400});
   }
 
-  // ── Step 1: 해당 pokemonId가 속한 evolutionChainId 조회 ────────
+  // Step 1: 해당 pokemonId가 속한 evolutionChainId 조회
   const {data: selfRow, error: selfErr} = await supabaseServer
     .from("TB_CXN_EVOLUTIONS")
     .select("evolutionChainId")
@@ -81,31 +75,28 @@ export async function GET(
 
   if (selfErr) {
     console.error("[pokemons/evol] 체인 ID 조회 오류:", selfErr.message);
-    return NextResponse.json<ApiErrorResponse>(
-      {error: "진화 체인 조회 중 오류가 발생했습니다."},
-      {status: 500}
-    );
+    return NextResponse.json<ApiErrorResponse>({error: "진화 체인 조회 중 오류가 발생했습니다."}, {status: 500});
   }
 
   if (!selfRow) {
     // TB_CXN_EVOLUTIONS에 없는 포켓몬 (mega/gmax 등 필터링된 폼)
     return NextResponse.json<ApiErrorResponse>(
       {error: `포켓몬 ID ${pokemonId}의 진화 체인 데이터가 없습니다.`},
-      {status: 404}
+      {status: 404},
     );
   }
 
   const {evolutionChainId} = selfRow as {evolutionChainId: number};
 
-  // ── Step 2: 해당 체인의 전체 구성원 조회 ──────────────────────
+  // Step 2: 해당 체인의 전체 구성원 조회
   const {data: chainRows, error: chainErr} = await supabaseServer
     .from("TB_CXN_EVOLUTIONS")
     .select(
       "evolutionChainId, chainLevel, pokemonId, " +
-      "speciesNameEn, speciesNameKo, " +
-      "varietyNameEn, varietyNameKo, varietyKeyword, " +
-      "spriteUrl, officialArtworkUrl, " +
-      "parentPokemonId, evolutionDetails"
+        "speciesNameEn, speciesNameKo, " +
+        "varietyNameEn, varietyNameKo, varietyKeyword, " +
+        "spriteUrl, officialArtworkUrl, " +
+        "parentPokemonId, evolutionDetails",
     )
     .eq("evolutionChainId", evolutionChainId)
     .order("chainLevel")
@@ -113,43 +104,37 @@ export async function GET(
 
   if (chainErr) {
     console.error("[pokemons/evol] 체인 구성원 조회 오류:", chainErr.message);
-    return NextResponse.json<ApiErrorResponse>(
-      {error: "진화 체인 구성원 조회 중 오류가 발생했습니다."},
-      {status: 500}
-    );
+    return NextResponse.json<ApiErrorResponse>({error: "진화 체인 구성원 조회 중 오류가 발생했습니다."}, {status: 500});
   }
 
   if (!chainRows || chainRows.length === 0) {
-    return NextResponse.json<ApiErrorResponse>(
-      {error: "진화 체인 데이터가 비어 있습니다."},
-      {status: 404}
-    );
+    return NextResponse.json<ApiErrorResponse>({error: "진화 체인 데이터가 비어 있습니다."}, {status: 404});
   }
 
-  // ── Step 3: 구성원들의 타입 정보 조회 ─────────────────────────
+  // Step 3: 구성원들의 타입 정보 조회
   // TB_CXN_POKEMON_TYPES에 없는 pokemonId(DB 미보유 폼)는 빈 배열 반환
   const rows = chainRows as unknown as EvolRow[];
 
   const memberIds = rows.map((r) => r.pokemonId);
   const typesMap = await fetchPokemonTypesMap(memberIds);
 
-  // ── Step 4: chainLevel 기준으로 그룹화 ────────────────────────
+  // Step 4: chainLevel 기준으로 그룹화
   const grouped = new Map<number, EvolutionChainMember[]>();
 
   for (const row of rows) {
     const member: EvolutionChainMember = {
-      pokemonId:          row.pokemonId,
-      chainLevel:         row.chainLevel,
-      parentPokemonId:    row.parentPokemonId,
-      speciesNameEn:      row.speciesNameEn,
-      speciesNameKo:      row.speciesNameKo,
-      varietyNameEn:      row.varietyNameEn,
-      varietyNameKo:      row.varietyNameKo,
-      varietyKeyword:     row.varietyKeyword,
-      spriteUrl:          row.spriteUrl,
+      pokemonId: row.pokemonId,
+      chainLevel: row.chainLevel,
+      parentPokemonId: row.parentPokemonId,
+      speciesNameEn: row.speciesNameEn,
+      speciesNameKo: row.speciesNameKo,
+      varietyNameEn: row.varietyNameEn,
+      varietyNameKo: row.varietyNameKo,
+      varietyKeyword: row.varietyKeyword,
+      spriteUrl: row.spriteUrl,
       officialArtworkUrl: row.officialArtworkUrl,
-      korTypes:           typesMap.get(row.pokemonId) ?? [],
-      evolutionDetails:   row.evolutionDetails,
+      korTypes: typesMap.get(row.pokemonId) ?? [],
+      evolutionDetails: row.evolutionDetails,
     };
 
     const existing = grouped.get(row.chainLevel) ?? [];
@@ -157,7 +142,7 @@ export async function GET(
     grouped.set(row.chainLevel, existing);
   }
 
-  // chainLevel 오름차순 정렬 후 응답 구성
+  // Step 5: chainLevel 오름차순 정렬 후 응답 구성
   const result: PokemonEvolutionChainResponse = Array.from(grouped.entries())
     .sort(([a], [b]) => a - b)
     .map(([chainLevel, chainData]) => ({chainLevel, chainData}));

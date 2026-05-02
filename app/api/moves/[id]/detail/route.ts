@@ -1,7 +1,8 @@
 /**
  * GET /api/moves/[id]/detail
  *
- * 특정 기술의 상세 정보 반환 (기술 상세 페이지용)
+ * - 특정 기술의 상세 정보 반환
+ * - 기술 상세 페이지용
  *
  * @param id - 기술 id (경로 파라미터)
  * @returns MoveDetail - brief 정보 + korDescription, pp, effectChance, priority
@@ -11,7 +12,7 @@ import {supabaseServer} from "@/lib/supabase/server";
 import {fetchTypeMap} from "@/lib/supabase/queryHelpers";
 import type {MoveDetail, ApiErrorResponse, DamageClass} from "@/types/apiTypes";
 
-interface MoveDetailRow {
+interface TB_MOVE_USED_COLUMNS {
   id: number;
   koreanName: string | null;
   typeId: number | null;
@@ -32,7 +33,7 @@ export async function GET(_request: NextRequest, {params}: {params: Promise<{id:
     return NextResponse.json<ApiErrorResponse>({error: "유효하지 않은 기술 ID입니다."}, {status: 400});
   }
 
-  // ── Step 1: 기술 전체 정보 조회 ─────────────────────────────
+  // Step 1: 기술 전체 정보 조회
   const {data: move, error: moveErr} = await supabaseServer
     .from("TB_MOVES")
     .select("id, koreanName, typeId, power, accuracy, damageClass, korDescription, pp, effectChance, priority")
@@ -48,11 +49,12 @@ export async function GET(_request: NextRequest, {params}: {params: Promise<{id:
     return NextResponse.json<ApiErrorResponse>({error: `ID ${id}에 해당하는 기술을 찾을 수 없습니다.`}, {status: 404});
   }
 
-  const m = move as MoveDetailRow;
+  const m = move as TB_MOVE_USED_COLUMNS;
 
-  // ── Step 2: typeId → 한국어 타입명 조회 ─────────────────────
+  // Step 2: typeId → 한국어 타입명 조회
   const typeMap = m.typeId != null ? await fetchTypeMap([m.typeId]) : new Map<number, string>();
 
+  // Step 3: 응답 데이터 구성
   const result: MoveDetail = {
     id: m.id,
     koreanName: m.koreanName ?? m.id.toString(),
