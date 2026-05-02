@@ -1,17 +1,36 @@
-import {SampleSearchResultItem} from "@/components/common-ui/SearchInput/SearchInput";
+import {DAMAGE_CLASS_MAP} from "@/store/constantStore";
+import {useMoveBrief} from "@/queries/moveQueries";
 
 interface MoveBucketProps {
-  moveBucket: SampleSearchResultItem[];
+  moveBucketIds: number[];
 }
 
-function MoveBucket({moveBucket}: MoveBucketProps) {
+function MoveBucketItem({moveId}: {moveId: number}) {
+  const {data: moveBrief, isLoading, isError} = useMoveBrief(moveId);
+
+  if (isLoading) {
+    return <p className="text-xs text-gray-500">기술 정보를 불러오는 중...</p>;
+  }
+
+  if (isError || !moveBrief) {
+    return <p className="text-xs text-red-500">기술 정보를 불러오지 못했습니다. (ID: {moveId})</p>;
+  }
+
   return (
     <div>
-      {moveBucket.map((move, index) => (
-        <div key={index}>
-          <p>{move.korName}</p>
-          <p>{move.damageClass}</p>
-          <p>{move.type}</p>
+      <p>{moveBrief.koreanName}</p>
+      <p>{DAMAGE_CLASS_MAP[moveBrief.damageClass]}</p>
+      <p>{moveBrief.korType}</p>
+    </div>
+  );
+}
+
+function MoveBucket({moveBucketIds}: MoveBucketProps) {
+  return (
+    <div>
+      {moveBucketIds.map((moveId) => (
+        <div key={moveId}>
+          <MoveBucketItem moveId={moveId} />
         </div>
       ))}
     </div>

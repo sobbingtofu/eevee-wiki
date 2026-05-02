@@ -22,7 +22,7 @@ import type {
 
 interface TB_POKEMONS_USED_COLUMNS {
   pokemonId: number;
-  koreanName: string | null;
+  korName: string | null;
   spriteUrl: string | null;
 }
 
@@ -88,7 +88,7 @@ export async function GET(request: NextRequest, {params}: {params: Promise<{id: 
   // Step 4: 포켓몬 기본 정보 조회
   const {data: pokemons, error: pokErr} = await supabaseServer
     .from("TB_POKEMONS")
-    .select("pokemonId, koreanName, spriteUrl")
+    .select("pokemonId, korName, spriteUrl")
     .in("pokemonId", pokemonIds)
     .order("pokemonId");
 
@@ -104,7 +104,7 @@ export async function GET(request: NextRequest, {params}: {params: Promise<{id: 
   const result: MoveLearningPokemonsResponse = (pokemons as TB_POKEMONS_USED_COLUMNS[]).map(
     (p): MoveLearningPokemonItem => ({
       pokemonId: p.pokemonId,
-      koreanName: p.koreanName ?? p.pokemonId.toString(),
+      koreanName: p.korName ?? p.pokemonId.toString(),
       spriteUrl: p.spriteUrl,
       korTypes: typesMap.get(p.pokemonId) ?? [],
       learnMethods: learnMap.get(p.pokemonId) ?? [],

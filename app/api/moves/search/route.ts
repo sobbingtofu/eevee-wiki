@@ -6,14 +6,14 @@
  * @param q - 국문 기술명 검색어 (예: "펀치")
  * @returns MoveSearchResponse - { id, koreanName, korType }[] (최대 20건)
  */
-import { NextRequest, NextResponse } from "next/server";
-import { supabaseServer } from "@/lib/supabase/server";
-import { fetchTypeMap } from "@/lib/supabase/queryHelpers";
-import type { MoveSearchResponse, ApiErrorResponse } from "@/types/apiTypes";
+import {NextRequest, NextResponse} from "next/server";
+import {supabaseServer} from "@/lib/supabase/server";
+import {fetchTypeMap} from "@/lib/supabase/queryHelpers";
+import type {MoveSearchResponse, ApiErrorResponse} from "@/types/apiTypes";
 
 interface MoveRow {
   id: number;
-  koreanName: string | null;
+  korName: string | null;
   typeId: number | null;
 }
 
@@ -25,21 +25,18 @@ export async function GET(request: NextRequest) {
     return NextResponse.json<MoveSearchResponse>([]);
   }
 
-  // ── Step 1: koreanName에 검색어 포함하는 기술 조회 ──────────────
-  const { data: moves, error: movesErr } = await supabaseServer
+  // ── Step 1: korName에 검색어 포함하는 기술 조회 ──────────────
+  const {data: moves, error: movesErr} = await supabaseServer
     .from("TB_MOVES")
-    .select("id, koreanName, typeId")
-    .not("koreanName", "is", null)
-    .ilike("koreanName", `%${q}%`)
-    .order("koreanName")
+    .select("id, korName, typeId")
+    .not("korName", "is", null)
+    .ilike("korName", `%${q}%`)
+    .order("korName")
     .limit(20);
 
   if (movesErr) {
     console.error("[moves/search] TB_MOVES 조회 오류:", movesErr.message);
-    return NextResponse.json<ApiErrorResponse>(
-      { error: "기술 검색 중 오류가 발생했습니다." },
-      { status: 500 }
-    );
+    return NextResponse.json<ApiErrorResponse>({error: "기술 검색 중 오류가 발생했습니다."}, {status: 500});
   }
 
   if (!moves || moves.length === 0) {
@@ -47,19 +44,15 @@ export async function GET(request: NextRequest) {
   }
 
   // ── Step 2: typeId → 한국어 타입명 맵 조회 ────────────────────
-  const typeIds = [
-    ...new Set(
-      (moves as MoveRow[]).map((m) => m.typeId).filter((id): id is number => id != null)
-    ),
-  ];
+  const typeIds = [...new Set((moves as MoveRow[]).map((m) => m.typeId).filter((id): id is number => id != null))];
   const typeMap = await fetchTypeMap(typeIds);
 
   // ── 응답 조립 ────────────────────────────────────────────────
   const result: MoveSearchResponse = (moves as MoveRow[])
-    .filter((m): m is MoveRow & { koreanName: string } => m.koreanName != null)
+    .filter((m): m is MoveRow & {korName: string} => m.korName != null)
     .map((m) => ({
       id: m.id,
-      koreanName: m.koreanName,
+      koreanName: m.korName,
       korType: m.typeId != null ? (typeMap.get(m.typeId) ?? "???") : "???",
     }));
 

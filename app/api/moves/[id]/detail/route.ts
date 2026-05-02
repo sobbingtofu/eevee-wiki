@@ -14,7 +14,7 @@ import type {MoveDetail, ApiErrorResponse, DamageClass} from "@/types/apiTypes";
 
 interface TB_MOVE_USED_COLUMNS {
   id: number;
-  koreanName: string | null;
+  korName: string | null;
   typeId: number | null;
   power: number | null;
   accuracy: number | null;
@@ -36,7 +36,7 @@ export async function GET(_request: NextRequest, {params}: {params: Promise<{id:
   // Step 1: 기술 전체 정보 조회
   const {data: move, error: moveErr} = await supabaseServer
     .from("TB_MOVES")
-    .select("id, koreanName, typeId, power, accuracy, damageClass, korDescription, pp, effectChance, priority")
+    .select("id, korName, typeId, power, accuracy, damageClass, korDescription, pp, effectChance, priority")
     .eq("id", id)
     .maybeSingle();
 
@@ -57,7 +57,7 @@ export async function GET(_request: NextRequest, {params}: {params: Promise<{id:
   // Step 3: 응답 데이터 구성
   const result: MoveDetail = {
     id: m.id,
-    koreanName: m.koreanName ?? m.id.toString(),
+    koreanName: m.korName ?? m.id.toString(),
     korType: m.typeId != null ? (typeMap.get(m.typeId) ?? "???") : "???",
     power: m.power,
     accuracy: m.accuracy,

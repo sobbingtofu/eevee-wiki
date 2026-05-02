@@ -4,32 +4,12 @@ import {useEffect, useRef, useState} from "react";
 import {Loader} from "../Loader/Loader";
 import {CloseIcon} from "../CloseIcon/CloseIcon";
 import SearchResultDropdown from "./SearchResultDropdown";
-import {pokemonType} from "@/types/pokemonDataType";
-
-export interface SampleSearchResultItem {
-  korName: string;
-  damageClass: string;
-  type: pokemonType;
-}
-
-const SAMPLE: SampleSearchResultItem[] = [
-  {korName: "칼춤", damageClass: "변화", type: "normal"},
-  {korName: "용의춤", damageClass: "변화", type: "dragon"},
-  {korName: "신속", damageClass: "물리", type: "normal"},
-  {korName: "오로라빔", damageClass: "특수", type: "ice"},
-  {korName: "칼춤", damageClass: "변화", type: "normal"},
-  {korName: "용의춤", damageClass: "변화", type: "dragon"},
-  {korName: "신속", damageClass: "물리", type: "normal"},
-  {korName: "오로라빔", damageClass: "특수", type: "ice"},
-  {korName: "칼춤", damageClass: "변화", type: "normal"},
-  {korName: "용의춤", damageClass: "변화", type: "dragon"},
-  {korName: "신속", damageClass: "물리", type: "normal"},
-  {korName: "오로라빔", damageClass: "특수", type: "ice"},
-];
+import {useSearchMoves} from "@/queries/moveQueries";
+import type {MoveSearchItem} from "@/types/apiTypes";
 
 interface SearchInputProps {
   outSideClickDropdownClose?: boolean; // 드롭다운 외부 클릭 시 드롭다운 닫기 기능 활성화 여부
-  handleClickDropdownItem?: (resultItem: SampleSearchResultItem) => void; // 검색 결과 항목 클릭 시 호출되는 콜백 함수, 필요에 따라 수정
+  handleClickDropdownItem?: (resultItem: MoveSearchItem) => void; // 검색 결과 항목 클릭 시 호출되는 콜백 함수, 필요에 따라 수정
 }
 
 function SearchInput({
@@ -51,7 +31,7 @@ function SearchInput({
   const inputDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
-  const searchResults = searchValue === "" ? [] : SAMPLE.filter((item) => item.korName.includes(searchValue));
+  const {data: searchResults = [], isFetching: isSearchLoading} = useSearchMoves(searchValue);
 
   const handleEnterKeyDown = () => {
     setIsDebouncing(false);
@@ -135,6 +115,14 @@ function SearchInput({
     setIsDropdownOpen(false);
   };
 
+  useEffect(() => {
+    return () => {
+      if (inputDebounceRef.current) {
+        clearTimeout(inputDebounceRef.current);
+      }
+    };
+  }, []);
+
   // 드롭다운 외부 클릭 시 드롭다운 닫기 기능 구현
   useEffect(() => {
     if (outSideClickDropdownClose) {
@@ -172,12 +160,12 @@ function SearchInput({
           placeholder="기술 이름을 입력하세요..."
           type="text"
         />
-        {isDebouncing && (
+        {(isDebouncing || isSearchLoading) && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2">
             <Loader sizeType={"small"} />
           </div>
         )}
-        {!isDebouncing && searchValue.trim() !== "" && (
+        {!isDebouncing && !isSearchLoading && searchValue.trim() !== "" && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2">
             <CloseIcon onClick={handleClickCloseIcon} />
           </div>
