@@ -2,12 +2,13 @@
  * GET /api/pokemons/[id]
  *
  * 특정 포켓몬의 상세 정보 반환 (포켓몬 상세 페이지 기본 정보)
+ * 진화 체인은 별도 /api/pokemons/[id]/evol 엔드포인트로 분리
  * 기술 목록은 별도 /api/pokemons/[id]/moves 엔드포인트로 분리
  *
  * @param id - pokemonId (경로 파라미터)
  * @returns PokemonDetail
  *          - pokemonId, koreanName, officialArtworkUrl, spriteUrl,
- *            evolutionChainUrl, korTypes, stats, evStats, abilities[]
+ *            korTypes, stats, evStats, abilities[]
  */
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
@@ -27,7 +28,6 @@ interface PokemonRow {
   koreanName: string | null;
   officialArtworkUrl: string | null;
   spriteUrl: string | null;
-  evolutionChainUrl: string | null;
   stats: StatEntry[] | null;
   evStats: EvStatEntry[] | null;
 }
@@ -63,7 +63,7 @@ export async function GET(
   const { data: pokemon, error: pokErr } = await supabaseServer
     .from("TB_POKEMONS")
     .select(
-      "pokemonId, speciesId, koreanName, officialArtworkUrl, spriteUrl, evolutionChainUrl, stats, evStats"
+      "pokemonId, speciesId, koreanName, officialArtworkUrl, spriteUrl, stats, evStats"
     )
     .eq("pokemonId", pokemonId)
     .maybeSingle();
@@ -160,7 +160,6 @@ export async function GET(
     koreanName: p.koreanName ?? p.pokemonId.toString(),
     officialArtworkUrl: p.officialArtworkUrl,
     spriteUrl: p.spriteUrl,
-    evolutionChainUrl: p.evolutionChainUrl,
     korTypes,
     stats: p.stats ?? [],
     evStats: p.evStats ?? [],

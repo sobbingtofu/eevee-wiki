@@ -3,7 +3,7 @@
 import SearchInput, {SampleSearchResultItem} from "@/components/common-ui/SearchInput/SearchInput";
 import {useState} from "react";
 import MoveBucket from "./MoveBucket";
-import SearchBtn from "../SearchBtn/SearchBtn";
+import SearchBtn from "./SearchBtn";
 
 function MoveSearchBucketSection() {
   const [moveBucket, setMoveBucket] = useState<SampleSearchResultItem[]>([]);
