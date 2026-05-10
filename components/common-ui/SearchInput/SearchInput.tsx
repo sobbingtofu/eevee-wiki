@@ -32,7 +32,7 @@ function SearchInput({
   const inputDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
-  const {data: searchResults = [], isFetching: isMoveSearchResultFetching} = useSearchMoves(searchValue);
+  const {data: searchResults = [], isFetching: isSearchResultFetching} = useSearchMoves(searchValue);
 
   /**
    * 검색창 내 엔터키 입력 키다운 핸들러
@@ -175,12 +175,12 @@ function SearchInput({
           placeholder="기술 이름을 입력하세요..."
           type="text"
         />
-        {(isDebouncing || isMoveSearchResultFetching) && (
+        {(isDebouncing || isSearchResultFetching) && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2">
             <Loader sizeType={"small"} />
           </div>
         )}
-        {!isDebouncing && !isMoveSearchResultFetching && searchValue.trim() !== "" && (
+        {!isDebouncing && !isSearchResultFetching && searchValue.trim() !== "" && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2">
             <CloseIcon onClick={handleClickCloseIcon} />
           </div>
@@ -188,6 +188,7 @@ function SearchInput({
         {/* 검색결과 드롭다운 */}
         {isDropdownOpen && (
           <SearchResultDropdown
+            isSearchResultsFetching={isSearchResultFetching}
             searchResults={searchResults}
             onResultItemClick={handleClickDropdownItem}
             accentedItemIndex={accentedDropdownItemIndex}

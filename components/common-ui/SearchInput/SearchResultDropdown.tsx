@@ -4,10 +4,20 @@ import type {MoveSearchItem} from "@/types/apiTypes";
 interface SearchResultDropdownProps {
   searchResults: MoveSearchItem[];
   onResultItemClick: (resultItem: MoveSearchItem) => void;
-  accentedItemIndex?: number; // 방향키로 선택된 검색 결과 항목의 인덱스, 필요에 따라 수정
+  accentedItemIndex?: number; // 방향키로 선택된 검색 결과 항목의 인덱스
+  isSearchResultsFetching: boolean;
 }
 
-function SearchResultDropdown({searchResults, onResultItemClick, accentedItemIndex = -1}: SearchResultDropdownProps) {
+function SearchResultDropdown({
+  searchResults,
+  onResultItemClick,
+  accentedItemIndex = -1,
+  isSearchResultsFetching,
+}: SearchResultDropdownProps) {
+  if (isSearchResultsFetching) {
+    return null;
+  }
+
   return (
     <>
       {searchResults.length === 0 && (
