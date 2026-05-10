@@ -23,7 +23,9 @@ function TypeChip({typeEn, typeKor}: TypeChipProps) {
       : TYPE_BG_CLASS_MAP.normal;
 
   return (
-    <div className={`px-2 py-1 rounded-md text-xs text-textWhite leading-none ${typeBgClass}`}>{finalTypeText}</div>
+    <div className={`px-2 py-1 rounded-md text-xs text-textWhite leading-none font-bold ${typeBgClass}`}>
+      {finalTypeText}
+    </div>
   );
 }
 

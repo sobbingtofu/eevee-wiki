@@ -74,7 +74,7 @@ export type MoveSearchResponse = MoveSearchItem[];
 export interface MoveBrief {
   id: number;
   koreanName: string;
-  korType: string;
+  korType: pokemonTypeKor;
   power: number | null;
   accuracy: number | null;
   damageClass: DamageClass;

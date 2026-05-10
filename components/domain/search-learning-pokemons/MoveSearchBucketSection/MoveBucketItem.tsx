@@ -1,3 +1,4 @@
+import TypeChip from "@/components/common-ui/TypeChip/TypeChip";
 import {useMoveBrief} from "@/queries/moveQueries";
 import {DAMAGE_CLASS_MAP} from "@/store/constantStore";
 
@@ -13,10 +14,25 @@ export function MoveBucketItem({moveId}: {moveId: number}) {
   }
 
   return (
-    <div>
-      <p>{moveBrief.koreanName}</p>
-      <p>{DAMAGE_CLASS_MAP[moveBrief.damageClass]}</p>
-      <p>{moveBrief.korType}</p>
+    <div className="p-4 rounded-2xl bg-slate-900/50 border border-slate-700 relative group">
+      <button className="absolute top-2 right-2 text-slate-300 hover:text-red-500 transition-colors">
+        <span className="text-lg " style={{fontFamily: "'Material Icons Round'"}}>
+          x
+        </span>
+      </button>
+      <div className="flex items-center gap-2 mb-2">
+        <TypeChip typeKor={moveBrief.korType} />
+        <h3 className="font-bold text-slate-200 text-lg">{moveBrief.koreanName}</h3>
+      </div>
+      {/* <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-3">{moveBrief.description}</p> */}
+      <p className="text-xs text-slate-400 leading-relaxed mb-3 overflow-hidden break-all [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical]">
+        {"test".repeat(40)}
+      </p>
+      <div className="flex gap-4 text-[10px] font-medium text-slate-400">
+        <span>위력: --</span>
+        <span>명중: --</span>
+        <span>분류: {DAMAGE_CLASS_MAP[moveBrief.damageClass]}</span>
+      </div>
     </div>
   );
 }
