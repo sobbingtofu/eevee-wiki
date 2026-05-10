@@ -170,8 +170,9 @@ function SearchInput({
           ref={inputRef}
           onFocus={handleInputFocus}
           onKeyDown={handleKeyDownSearchInput}
-          className="w-full pl-4 pr-10 py-4 rounded-2xl border-0 ring-1 ring-slate-200 dark:ring-slate-700 bg-white dark:bg-slate-900
-          focus:ring-2 focus:ring-primary transition-all shadow-sm text-black text-sm relative"
+          className="w-full pl-4 pr-10 py-4 rounded-2xl border-0 ring-1 ring-slate-700 bg-slate-900
+          transition-all shadow-sm text-white text-sm relative outline-none focus:outline-none
+          focus:ring-2 focus:ring-slate-400 focus:ring-offset-1 focus:ring-offset-slate-900"
           placeholder="기술 이름을 입력하세요..."
           type="text"
         />

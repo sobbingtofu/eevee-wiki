@@ -13,7 +13,7 @@ function MoveSearchBucketSection() {
       <div className="w-full h-full">
         {/* 높이 86px */}
         <div className="w-full h-[86px]">
-          <h3 className="text-xs font-bold mb-4">기술 검색</h3>
+          <h3 className="text-xs font-bold mb-4 ml-1">기술 검색</h3>
 
           <SearchInput
             handleClickDropdownItem={(item) =>
@@ -22,7 +22,7 @@ function MoveSearchBucketSection() {
           />
         </div>
 
-        <MoveBucket moveBucketIds={moveBucketIds} className="mt-4 max-h-[calc(100%-86px-52px-16px)] overflow-y-auto" />
+        <MoveBucket moveBucketIds={moveBucketIds} className="mt-10 max-h-[calc(100%-86px-52px-40px)] overflow-y-auto" />
       </div>
 
       {/* 높이 52px */}
