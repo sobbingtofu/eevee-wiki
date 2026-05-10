@@ -7,7 +7,7 @@ interface MoveBucketProps {
 
 function MoveBucket({moveBucketIds, className}: MoveBucketProps) {
   return (
-    <div className={`w-full border border-green-600 ${className}`}>
+    <div className={`w-full ${className}`}>
       {moveBucketIds.map((moveId) => (
         <div key={moveId}>
           <MoveBucketItem moveId={moveId} />

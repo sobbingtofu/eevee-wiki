@@ -12,7 +12,7 @@ function MoveSearchBucketSection() {
     <div className="w-full sm:w-[360px] h-full p-6 bg-backgroundLight flex flex-col justify-between items-start">
       <div className="w-full h-full">
         {/* 높이 86px */}
-        <div className="w-full border border-red-600">
+        <div className="w-full h-[86px]">
           <h3 className="text-xs font-bold mb-4">기술 검색</h3>
 
           <SearchInput
