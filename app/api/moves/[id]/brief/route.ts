@@ -11,6 +11,7 @@ import {NextRequest, NextResponse} from "next/server";
 import {supabaseServer} from "@/lib/supabase/server";
 import {fetchTypeMap} from "@/lib/supabase/queryHelpers";
 import type {MoveBrief, ApiErrorResponse, DamageClass} from "@/types/apiTypes";
+import {pokemonTypeKor} from "@/types/pokemonDataType";
 
 interface TB_MOVE_USED_COLUMNS {
   id: number;
@@ -19,6 +20,7 @@ interface TB_MOVE_USED_COLUMNS {
   power: number | null;
   accuracy: number | null;
   damageClass: DamageClass | null;
+  korDescription: string | null;
 }
 
 export async function GET(_request: NextRequest, {params}: {params: Promise<{id: string}>}) {
@@ -32,7 +34,7 @@ export async function GET(_request: NextRequest, {params}: {params: Promise<{id:
   // Step 1: 기술 기본 정보 조회
   const {data: move, error: moveErr} = await supabaseServer
     .from("TB_MOVES")
-    .select("id, korName, typeId, power, accuracy, damageClass")
+    .select("id, korName, typeId, power, accuracy, damageClass, korDescription")
     .eq("id", id)
     .maybeSingle();
 
@@ -48,7 +50,7 @@ export async function GET(_request: NextRequest, {params}: {params: Promise<{id:
   const m = move as TB_MOVE_USED_COLUMNS;
 
   // Step 2: typeId → 한국어 타입명 조회
-  const typeMap = m.typeId != null ? await fetchTypeMap([m.typeId]) : new Map<number, string>();
+  const typeMap = m.typeId != null ? await fetchTypeMap([m.typeId]) : new Map<number, pokemonTypeKor>();
 
   // Step 3: 응답 데이터 구성
   const result: MoveBrief = {
@@ -58,6 +60,7 @@ export async function GET(_request: NextRequest, {params}: {params: Promise<{id:
     power: m.power,
     accuracy: m.accuracy,
     damageClass: m.damageClass ?? "status",
+    description: m.korDescription ?? "",
   };
 
   return NextResponse.json<MoveBrief>(result);

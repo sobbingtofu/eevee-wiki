@@ -25,7 +25,7 @@ export function MoveBucketItem({moveId}: {moveId: number}) {
       </div>
       {/* <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-3">{moveBrief.description}</p> */}
       <p className="text-xs text-slate-400 leading-relaxed mb-3 overflow-hidden break-all [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical]">
-        {"test".repeat(40)}
+        {moveBrief.description}
       </p>
       <div className="flex gap-4 text-xs font-medium text-slate-400">
         <span>위력: --</span>

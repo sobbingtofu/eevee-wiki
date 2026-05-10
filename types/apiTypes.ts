@@ -78,6 +78,7 @@ export interface MoveBrief {
   power: number | null;
   accuracy: number | null;
   damageClass: DamageClass;
+  description: string;
 }
 
 /**

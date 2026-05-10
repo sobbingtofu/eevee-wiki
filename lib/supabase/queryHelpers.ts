@@ -5,6 +5,7 @@
  * 모두 server 환경(API Route)에서만 호출됨
  */
 
+import {pokemonTypeKor} from "@/types/pokemonDataType";
 import {supabaseServer} from "./server";
 import type {LearnMethod, MoveLearnEntry} from "@/types/apiTypes";
 
@@ -13,7 +14,7 @@ import type {LearnMethod, MoveLearnEntry} from "@/types/apiTypes";
 // ──────────────────────────────────────────────
 interface SimplifiedTypeRow {
   id: number;
-  koreanName: string;
+  koreanName: pokemonTypeKor;
 }
 
 interface SimplifiedPokemonTypeRow {
@@ -37,7 +38,7 @@ interface SimplifiedLearnRow {
 /**
  * typeId 배열 → Map<typeId, 한국어 타입명>
  */
-export async function fetchTypeMap(typeIds: number[]): Promise<Map<number, string>> {
+export async function fetchTypeMap(typeIds: number[]): Promise<Map<number, pokemonTypeKor>> {
   if (typeIds.length === 0) return new Map();
 
   const {data, error} = await supabaseServer.from("TB_TYPES").select("id, koreanName").in("id", typeIds);
