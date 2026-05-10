@@ -12,6 +12,8 @@ interface SearchInputProps {
   handleClickDropdownItem?: (resultItem: MoveSearchItem) => void; // 검색 결과 항목 클릭 시 호출되는 콜백 함수, 필요에 따라 수정
 }
 
+const ARROW_KEYDOWN_THROTTLE_DELAY = 80;
+
 function SearchInput({
   outSideClickDropdownClose = true,
   handleClickDropdownItem = (item) => {
@@ -22,17 +24,22 @@ function SearchInput({
   const [searchValue, setSearchValue] = useState("");
   const [isDebouncing, setIsDebouncing] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
   const [accentedDropdownItemIndex, setAccentedDropdownItemIndex] = useState(-1); // 방향키로 선택된 검색 결과 항목의 인덱스 상태
+
   const lastArrowKeyTime = useRef<number>(0);
-  const arrowKeyThrottleDelay = 80;
 
   const inputRef = useRef<HTMLInputElement>(null);
   const inputDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
-  const {data: searchResults = [], isFetching: isSearchLoading} = useSearchMoves(searchValue);
+  const {data: searchResults = [], isFetching: isMoveSearchResultFetching} = useSearchMoves(searchValue);
 
+  /**
+   * 검색창 내 엔터키 입력 키다운 핸들러
+   * - 디바운싱 즉시 종료시킴
+   * - 검색 결과가 존재하고, 방향키로 선택 강조된 항목이 없을 때 → 검색 결과의 첫 번째 항목 선택 강조
+   * - 검색 결과가 존재하고, 방향키로 선택 강조된 항목이 있을 때 → 해당 항목 클릭 핸들러 호출하여 검색 결과 선택 처리
+   */
   const handleEnterKeyDown = () => {
     setIsDebouncing(false);
     if (searchResults.length > 0 && accentedDropdownItemIndex === -1) {
@@ -46,11 +53,16 @@ function SearchInput({
     }
   };
 
+  /**
+   * 검색창 내 방향키 입력 키다운 핸들러
+   * - 디바운싱 즉시 종료시킴
+   * - 검색 결과가 존재할 때에만 동작하도록 함
+   */
   const handleArrowKeyDown = (arrow: "ArrowDown" | "ArrowUp") => {
     setIsDebouncing(false);
     if (searchResults.length > 0) {
       const currentTime = Date.now();
-      if (currentTime - lastArrowKeyTime.current > arrowKeyThrottleDelay) {
+      if (currentTime - lastArrowKeyTime.current > ARROW_KEYDOWN_THROTTLE_DELAY) {
         if (arrow === "ArrowDown") {
           if (accentedDropdownItemIndex < searchResults.length - 1) {
             setAccentedDropdownItemIndex((prev) => prev + 1);
@@ -82,7 +94,9 @@ function SearchInput({
     } else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
       e.preventDefault();
       handleArrowKeyDown(e.key);
-    } else {
+    }
+    // 방향키, 엔터키 등 툭수입력 아닌 일반 입력 처리 핸들링은 여기부터
+    else {
       setIsDebouncing(true);
       setIsDropdownOpen(false);
       setAccentedDropdownItemIndex(-1);
@@ -113,6 +127,7 @@ function SearchInput({
       inputRef.current.value = "";
     }
     setIsDropdownOpen(false);
+    setAccentedDropdownItemIndex(-1);
   };
 
   useEffect(() => {
@@ -160,12 +175,12 @@ function SearchInput({
           placeholder="기술 이름을 입력하세요..."
           type="text"
         />
-        {(isDebouncing || isSearchLoading) && (
+        {(isDebouncing || isMoveSearchResultFetching) && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2">
             <Loader sizeType={"small"} />
           </div>
         )}
-        {!isDebouncing && !isSearchLoading && searchValue.trim() !== "" && (
+        {!isDebouncing && !isMoveSearchResultFetching && searchValue.trim() !== "" && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2">
             <CloseIcon onClick={handleClickCloseIcon} />
           </div>

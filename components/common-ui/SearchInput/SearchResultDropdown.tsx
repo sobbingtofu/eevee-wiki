@@ -1,30 +1,5 @@
 import TypeChip from "../TypeChip/TypeChip";
-import {pokemonTypeKor, pokemonType} from "@/types/pokemonDataType";
 import type {MoveSearchItem} from "@/types/apiTypes";
-
-const KOR_TYPE_TO_TYPE: Record<pokemonTypeKor, pokemonType> = {
-  노말: "normal",
-  격투: "fighting",
-  비행: "flying",
-  독: "poison",
-  땅: "ground",
-  바위: "rock",
-  벌레: "bug",
-  고스트: "ghost",
-  강철: "steel",
-  불: "fire",
-  물: "water",
-  풀: "grass",
-  전기: "electric",
-  에스퍼: "psychic",
-  얼음: "ice",
-  드래곤: "dragon",
-  악: "dark",
-  페어리: "fairy",
-  스텔라: "stellar",
-  "???": "unknown",
-  섀도우: "shadow",
-};
 
 interface SearchResultDropdownProps {
   searchResults: MoveSearchItem[];
@@ -52,7 +27,7 @@ function SearchResultDropdown({searchResults, onResultItemClick, accentedItemInd
                 onClick={() => onResultItemClick(resultItem)}
               >
                 <div>{resultItem.koreanName}</div>
-                <TypeChip type={KOR_TYPE_TO_TYPE[resultItem.korType as pokemonTypeKor] ?? "unknown"} />
+                <TypeChip typeKor={resultItem.korType} />
               </div>
             ))}
           </div>

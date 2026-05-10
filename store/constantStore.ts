@@ -1,7 +1,7 @@
 import {DamageClass, DamageClassKor} from "@/types/apiTypes";
 import {pokemonType, pokemonTypeKor} from "@/types/pokemonDataType";
 
-export const TYPE_MAP: {[key in pokemonType]: pokemonTypeKor} = {
+export const TYPE_MAP_EN_TO_KOR: {[key in pokemonType]: pokemonTypeKor} = {
   normal: "노말",
   fighting: "격투",
   flying: "비행",
@@ -24,6 +24,14 @@ export const TYPE_MAP: {[key in pokemonType]: pokemonTypeKor} = {
   unknown: "???",
   shadow: "???",
 };
+
+export const TYPE_MAP_KOR_TO_EN: Record<pokemonTypeKor, pokemonType> = Object.entries(TYPE_MAP_EN_TO_KOR).reduce(
+  (acc, [typeEn, typeKor]) => {
+    acc[typeKor as pokemonTypeKor] = typeEn as pokemonType;
+    return acc;
+  },
+  {} as Record<pokemonTypeKor, pokemonType>,
+);
 
 export const TYPE_BG_CLASS_MAP: {[key in pokemonType]: string} = {
   normal: "bg-normal",

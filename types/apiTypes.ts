@@ -8,6 +8,8 @@
  *  TB_GEN_INFO
  */
 
+import {pokemonTypeKor} from "./pokemonDataType";
+
 // ─────────────────────────────────────────
 // 공통 원시 타입
 // ─────────────────────────────────────────
@@ -60,7 +62,7 @@ export type DamageClassKor = "물리" | "특수" | "변화";
 export interface MoveSearchItem {
   id: number;
   koreanName: string;
-  korType: string; // TB_TYPES.koreanName
+  korType: pokemonTypeKor;
 }
 
 export type MoveSearchResponse = MoveSearchItem[];
@@ -237,22 +239,22 @@ export type SearchLearningPokemonsResponse = LearningPokemonItem[];
  *               "recoil-damage"
  */
 export interface EvolutionDetailEntry {
-  trigger:                 string | null;  // 진화 트리거 (level-up, use-item, trade ...)
-  min_level:               number | null;  // 최소 레벨
-  min_happiness:           number | null;  // 최소 친밀도
-  time_of_day:             string | null;  // "day" | "night" | "" (시간대 조건)
-  item:                    string | null;  // 사용 아이템 이름 (use-item 트리거 시)
-  held_item:               string | null;  // 지닌 아이템 이름
-  known_move:              string | null;  // 알고 있어야 하는 기술 이름
-  known_move_type:         string | null;  // 알고 있어야 하는 기술 타입
-  location:                string | null;  // 진화 발생 장소
-  min_affection:           number | null;  // 최소 애정도
-  needs_overworld_rain:    boolean | null; // 필드 비 조건
-  party_species:           string | null;  // 파티 내 특정 포켓몬 조건
-  party_type:              string | null;  // 파티 내 특정 타입 조건
-  relative_physical_stats: number | null;  // 공격↔방어 비교 (-1: 방어↑, 0: 동일, 1: 공격↑)
-  trade_species:           string | null;  // 교환 대상 포켓몬
-  turn_upside_down:        boolean | null; // 기기를 뒤집는 조건
+  trigger: string | null; // 진화 트리거 (level-up, use-item, trade ...)
+  min_level: number | null; // 최소 레벨
+  min_happiness: number | null; // 최소 친밀도
+  time_of_day: string | null; // "day" | "night" | "" (시간대 조건)
+  item: string | null; // 사용 아이템 이름 (use-item 트리거 시)
+  held_item: string | null; // 지닌 아이템 이름
+  known_move: string | null; // 알고 있어야 하는 기술 이름
+  known_move_type: string | null; // 알고 있어야 하는 기술 타입
+  location: string | null; // 진화 발생 장소
+  min_affection: number | null; // 최소 애정도
+  needs_overworld_rain: boolean | null; // 필드 비 조건
+  party_species: string | null; // 파티 내 특정 포켓몬 조건
+  party_type: string | null; // 파티 내 특정 타입 조건
+  relative_physical_stats: number | null; // 공격↔방어 비교 (-1: 방어↑, 0: 동일, 1: 공격↑)
+  trade_species: string | null; // 교환 대상 포켓몬
+  turn_upside_down: boolean | null; // 기기를 뒤집는 조건
 }
 
 /**
@@ -260,18 +262,18 @@ export interface EvolutionDetailEntry {
  * GET /api/pokemons/[id]/evol 응답의 chainData 배열 원소
  */
 export interface EvolutionChainMember {
-  pokemonId:          number;
-  chainLevel:         number;          // 1=기본형, 2=1차진화, 3=2차진화
-  parentPokemonId:    number | null;   // 직전 진화 폼 ID (기본형이면 null)
-  speciesNameEn:      string;
-  speciesNameKo:      string | null;
-  varietyNameEn:      string;          // ex. "meowth-alola"
-  varietyNameKo:      string | null;   // ex. "나옹 (알로라 리전폼)"
-  varietyKeyword:     string;          // 지역 키워드 KO ("알로라") or ""
-  spriteUrl:          string | null;
+  pokemonId: number;
+  chainLevel: number; // 1=기본형, 2=1차진화, 3=2차진화
+  parentPokemonId: number | null; // 직전 진화 폼 ID (기본형이면 null)
+  speciesNameEn: string;
+  speciesNameKo: string | null;
+  varietyNameEn: string; // ex. "meowth-alola"
+  varietyNameKo: string | null; // ex. "나옹 (알로라 리전폼)"
+  varietyKeyword: string; // 지역 키워드 KO ("알로라") or ""
+  spriteUrl: string | null;
   officialArtworkUrl: string | null;
-  korTypes:           string[];        // TB_CXN_POKEMON_TYPES JOIN 결과
-  evolutionDetails:   EvolutionDetailEntry[] | null; // 진화 조건 (기본형은 null)
+  korTypes: string[]; // TB_CXN_POKEMON_TYPES JOIN 결과
+  evolutionDetails: EvolutionDetailEntry[] | null; // 진화 조건 (기본형은 null)
 }
 
 /**
@@ -287,7 +289,7 @@ export interface EvolutionChainMember {
  */
 export type PokemonEvolutionChainResponse = {
   chainLevel: number;
-  chainData:  EvolutionChainMember[];
+  chainData: EvolutionChainMember[];
 }[];
 
 // ─────────────────────────────────────────
