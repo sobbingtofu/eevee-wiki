@@ -22,10 +22,10 @@ function MoveSearchBucketSection() {
           />
         </div>
 
-        <MoveBucket moveBucketIds={moveBucketIds} className="mt-4 max-h-[calc(100%-86px-40px)] overflow-y-auto" />
+        <MoveBucket moveBucketIds={moveBucketIds} className="mt-4 max-h-[calc(100%-86px-52px-16px)] overflow-y-auto" />
       </div>
 
-      {/* 높이 40px */}
+      {/* 높이 52px */}
       <SearchBtn />
     </div>
   );
