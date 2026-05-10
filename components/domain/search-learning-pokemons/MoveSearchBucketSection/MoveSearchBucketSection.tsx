@@ -1,12 +1,12 @@
 "use client";
 
 import SearchInput from "@/components/common-ui/SearchInput/SearchInput";
-import {useState} from "react";
 import MoveBucket from "./MoveBucket";
 import SearchBtn from "./SearchBtn";
+import {MoveBucketProvider, useMoveBucketContext} from "./context/MoveBucketContext";
 
-function MoveSearchBucketSection() {
-  const [moveBucketIds, setMoveBucketIds] = useState<number[]>([]);
+function MoveSearchBucketSectionContent() {
+  const {addMoveBucketId} = useMoveBucketContext();
 
   return (
     <div className="w-full sm:w-[360px] h-full p-6 bg-backgroundLight flex flex-col justify-between items-start">
@@ -15,19 +15,23 @@ function MoveSearchBucketSection() {
         <div className="w-full h-[86px]">
           <h3 className="text-xs font-bold mb-4 ml-1">기술 검색</h3>
 
-          <SearchInput
-            handleClickDropdownItem={(item) =>
-              setMoveBucketIds((prev) => (prev.includes(item.id) ? prev : [...prev, item.id]))
-            }
-          />
+          <SearchInput handleClickDropdownItem={(item) => addMoveBucketId(item.id)} />
         </div>
 
-        <MoveBucket moveBucketIds={moveBucketIds} className="mt-10" />
+        <MoveBucket className="mt-10" />
       </div>
 
       {/* 높이 52px */}
       <SearchBtn className="mt-4" />
     </div>
+  );
+}
+
+function MoveSearchBucketSection() {
+  return (
+    <MoveBucketProvider>
+      <MoveSearchBucketSectionContent />
+    </MoveBucketProvider>
   );
 }
 

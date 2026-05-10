@@ -2,9 +2,19 @@ import PlainCloseIcon from "@/components/common-ui/CloseIcons/PlainCloseIcon";
 import TypeChip from "@/components/common-ui/TypeChip/TypeChip";
 import {useMoveBrief} from "@/queries/moveQueries";
 import {DAMAGE_CLASS_MAP} from "@/store/constantStore";
+import {useMoveBucketContext} from "./context/MoveBucketContext";
 
-export function MoveBucketItem({moveId}: {moveId: number}) {
+interface MoveBucketItemProps {
+  moveId: number;
+}
+
+export function MoveBucketItem({moveId}: MoveBucketItemProps) {
+  const {removeMoveBucketId} = useMoveBucketContext();
   const {data: moveBrief, isLoading, isError} = useMoveBrief(moveId);
+
+  const handleClickRemoveBtn = () => {
+    removeMoveBucketId(moveId);
+  };
 
   if (isLoading) {
     return <p className="text-xs text-gray-500">기술 정보를 불러오는 중...</p>;
@@ -17,7 +27,11 @@ export function MoveBucketItem({moveId}: {moveId: number}) {
   return (
     <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-700 relative group">
       {/* 닫기버튼 */}
-      <button type="button" className="absolute top-[8px] right-[8px] text-slate-500 p-2 cursor-pointer">
+      <button
+        type="button"
+        className="absolute top-[8px] right-[8px] text-slate-500 p-2 cursor-pointer"
+        onClick={handleClickRemoveBtn}
+      >
         <PlainCloseIcon className="w-3 h-3" />
       </button>
 

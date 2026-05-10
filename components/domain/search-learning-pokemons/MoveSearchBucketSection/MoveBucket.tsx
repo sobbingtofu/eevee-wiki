@@ -1,11 +1,13 @@
+import {useMoveBucketContext} from "./context/MoveBucketContext";
 import {MoveBucketItem} from "./MoveBucketItem";
 
 interface MoveBucketProps {
-  moveBucketIds: number[];
   className?: string;
 }
 
-function MoveBucket({moveBucketIds, className}: MoveBucketProps) {
+function MoveBucket({className}: MoveBucketProps) {
+  const {moveBucketIds} = useMoveBucketContext();
+
   return (
     <div className={`w-full h-full ${className}`}>
       <h3 className="text-xs font-bold mb-4 ml-1">검색할 기술 ({moveBucketIds.length}개)</h3>
