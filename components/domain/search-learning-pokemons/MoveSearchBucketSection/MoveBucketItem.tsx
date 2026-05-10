@@ -16,20 +16,26 @@ export function MoveBucketItem({moveId}: {moveId: number}) {
 
   return (
     <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-700 relative group">
+      {/* 닫기버튼 */}
       <button type="button" className="absolute top-[8px] right-[8px] text-slate-500 p-2 cursor-pointer">
         <PlainCloseIcon className="w-3 h-3" />
       </button>
+
+      {/* 타입과 이름 */}
       <div className="flex items-center gap-3 mb-2">
         <TypeChip typeKor={moveBrief.korType} />
         <h3 className="font-bold text-slate-200 text-lg">{moveBrief.koreanName}</h3>
       </div>
-      {/* <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-3">{moveBrief.description}</p> */}
+
+      {/* 기술 설명 */}
       <p className="text-xs text-slate-400 leading-relaxed mb-3 overflow-hidden break-all [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical]">
         {moveBrief.description}
       </p>
+
+      {/* 위력 명중 분류 */}
       <div className="flex gap-4 text-xs font-medium text-slate-400">
-        <span>위력: --</span>
-        <span>명중: --</span>
+        <span>위력: {moveBrief.power ?? "--"}</span>
+        <span>명중: {moveBrief.accuracy ?? "--"}</span>
         <span>분류: {DAMAGE_CLASS_MAP[moveBrief.damageClass]}</span>
       </div>
     </div>

@@ -21,12 +21,12 @@ function SearchResultDropdown({
   return (
     <>
       {searchResults.length === 0 && (
-        <div className="bg-white w-full min-h-10 max-h-45 overflow-y-auto rounded-lg absolute top-14 py-2">
+        <div className="bg-white w-full min-h-10 max-h-45 overflow-y-auto rounded-lg absolute top-14 py-2 z-10">
           <p className="text-gray-400 text-xs flex justify-center items-center h-10">검색 결과가 없습니다.</p>
         </div>
       )}
       {searchResults.length > 0 && (
-        <div className="bg-white w-full rounded-lg absolute top-14 py-2 px-1">
+        <div className="bg-white w-full rounded-lg absolute top-14 py-2 px-1 z-10">
           <div className="flex flex-col overflow-y-auto min-h-10 max-h-45 ">
             {searchResults.map((resultItem, index) => (
               <div

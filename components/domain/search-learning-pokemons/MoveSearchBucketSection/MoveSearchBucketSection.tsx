@@ -10,7 +10,7 @@ function MoveSearchBucketSection() {
 
   return (
     <div className="w-full sm:w-[360px] h-full p-6 bg-backgroundLight flex flex-col justify-between items-start">
-      <div className="w-full h-full">
+      <div className="w-full h-[calc(100%-52px-16px)]">
         {/* 높이 86px */}
         <div className="w-full h-[86px]">
           <h3 className="text-xs font-bold mb-4 ml-1">기술 검색</h3>
@@ -22,11 +22,11 @@ function MoveSearchBucketSection() {
           />
         </div>
 
-        <MoveBucket moveBucketIds={moveBucketIds} className="mt-10 max-h-[calc(100%-86px-52px-40px)] overflow-y-auto" />
+        <MoveBucket moveBucketIds={moveBucketIds} className="mt-10" />
       </div>
 
       {/* 높이 52px */}
-      <SearchBtn />
+      <SearchBtn className="mt-4" />
     </div>
   );
 }
