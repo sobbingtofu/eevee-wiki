@@ -2,7 +2,7 @@
 
 import {useEffect, useRef, useState} from "react";
 import {Loader} from "../Loader/Loader";
-import {CloseIcon} from "../CloseIcon/CloseIcon";
+import {GrayColoredCloseIcon} from "../CloseIcons/GrayColoredCloseIcon";
 import SearchResultDropdown from "./SearchResultDropdown";
 import {useSearchMoves} from "@/queries/moveQueries";
 import type {MoveSearchItem} from "@/types/apiTypes";
@@ -183,7 +183,7 @@ function SearchInput({
         )}
         {!isDebouncing && !isSearchResultFetching && searchValue.trim() !== "" && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2">
-            <CloseIcon onClick={handleClickCloseIcon} />
+            <GrayColoredCloseIcon onClick={handleClickCloseIcon} />
           </div>
         )}
         {/* 검색결과 드롭다운 */}

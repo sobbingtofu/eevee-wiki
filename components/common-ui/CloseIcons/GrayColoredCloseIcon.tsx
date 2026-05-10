@@ -6,9 +6,9 @@ interface CloseIconProps {
   onClick?: () => void;
 }
 
-export const CloseIcon = ({onClick}: PropsWithChildren<CloseIconProps>) => {
+export const GrayColoredCloseIcon = ({onClick}: PropsWithChildren<CloseIconProps>) => {
   return (
-    <div className="select-none cursor-pointer hover:text-red-500 transition-colors duration-200" onClick={onClick}>
+    <div className="select-none cursor-pointer" onClick={onClick}>
       <Image src={CloseIconUrl} alt="CloseIcon" width={20} height={20} />
     </div>
   );
