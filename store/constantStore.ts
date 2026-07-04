@@ -1,4 +1,4 @@
-import {DamageClass, DamageClassKor} from "@/types/apiTypes";
+import {DamageClass, DamageClassKor, StatEntry} from "@/types/apiTypes";
 import {pokemonType, pokemonTypeKor} from "@/types/pokemonDataType";
 
 export const TYPE_MAP_EN_TO_KOR: {[key in pokemonType]: pokemonTypeKor} = {
@@ -62,3 +62,13 @@ export const DAMAGE_CLASS_MAP: {[key in DamageClass]: DamageClassKor} = {
   special: "특수",
   status: "변화",
 };
+
+/** 스탯 표시 순서 및 라벨 (statName → 국문 라벨) */
+export const STAT_META: {key: StatEntry["statName"]; label: string}[] = [
+  {key: "hp", label: "HP"},
+  {key: "attack", label: "공격"},
+  {key: "defense", label: "방어"},
+  {key: "specialAttack", label: "특공"},
+  {key: "specialDefense", label: "특방"},
+  {key: "speed", label: "스피드"},
+];

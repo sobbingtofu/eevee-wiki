@@ -1,0 +1,68 @@
+import TypeChip from "@/components/common-ui/TypeChip/TypeChip";
+import {STAT_META} from "@/store/constantStore";
+import {LearningPokemonItem, MoveLearnEntry, StatEntry} from "@/types/apiTypes";
+import {pokemonTypeKor} from "@/types/pokemonDataType";
+import {formatLearnMethods} from "@/utils/pokemonDataUtils";
+import useMoveKoreanName from "@/hooks/useMoveKoreanName";
+
+/** 개별 포켓몬 카드 */
+function LearningPokemonCard({pokemon, moveIds}: {pokemon: LearningPokemonItem; moveIds: number[]}) {
+  const statMap: Partial<Record<StatEntry["statName"], number>> = {};
+  for (const stat of pokemon.stats) {
+    statMap[stat.statName] = stat.statValue;
+  }
+
+  return (
+    <div className="flex flex-col p-6 rounded-3xl bg-slate-900/40 border border-slate-800">
+      {/* 스프라이트 이미지 */}
+      <div className="w-full aspect-square mb-5 rounded-2xl bg-[#f5f0e6] flex items-center justify-center overflow-hidden">
+        {pokemon.spriteUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={pokemon.spriteUrl} alt={pokemon.koreanName} className="w-4/5 h-4/5 object-contain" />
+        ) : (
+          <span className="text-slate-400 text-xs">이미지 없음</span>
+        )}
+      </div>
+
+      {/* 이름 */}
+      <h3 className="text-xl font-bold text-slate-100 text-center mb-3">{pokemon.koreanName}</h3>
+
+      {/* 타입 */}
+      <div className="flex justify-center gap-2 mb-6">
+        {pokemon.korTypes.map((type) => (
+          <TypeChip key={type} typeKor={type as pokemonTypeKor} />
+        ))}
+      </div>
+
+      {/* 스탯 */}
+      <div className="grid grid-cols-3 gap-x-2 gap-y-4 mb-5">
+        {STAT_META.map((stat) => (
+          <div key={stat.key} className="text-center">
+            <p className="text-xs font-semibold text-slate-400 mb-1">{stat.label}</p>
+            <p className="text-base font-bold text-slate-100">{statMap[stat.key] ?? "-"}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* 기술별 학습방법 */}
+      <div className="flex flex-col gap-3 pt-4 border-t border-slate-800">
+        {moveIds.map((moveId) => (
+          <MoveLearningMethodsArea key={moveId} moveId={moveId} entries={pokemon.moveLearnInfo[String(moveId)] ?? []} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default LearningPokemonCard;
+
+/** 카드 하단의 기술별 학습방법 행 */
+function MoveLearningMethodsArea({moveId, entries}: {moveId: number; entries: MoveLearnEntry[]}) {
+  const name = useMoveKoreanName(moveId);
+  return (
+    <div>
+      <p className="text-primary1 font-bold text-sm">{name}</p>
+      <p className="text-slate-400 text-xs mt-1">{formatLearnMethods(entries)}</p>
+    </div>
+  );
+}

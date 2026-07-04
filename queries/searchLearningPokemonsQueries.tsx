@@ -2,6 +2,13 @@ import {useMutation} from "@tanstack/react-query";
 import type {ApiErrorResponse, SearchLearningPokemonsRequest, SearchLearningPokemonsResponse} from "@/types/apiTypes";
 
 /**
+ * 검색 뮤테이션 키
+ * - SearchBtn에서 검색을 실행하고, LearningPokemonsSection에서 그 결과(data/status)를
+ *   useMutationState로 공유해 읽기 위해 사용
+ */
+export const SEARCH_LEARNING_POKEMONS_MUTATION_KEY = ["search-learning-pokemons"] as const;
+
+/**
  * 기술 바구니에 담긴 복수의 기술을 특정 세대에서 모두 배우는 포켓몬 검색
  *
  * 반환 데이터 (각 포켓몬):
@@ -32,6 +39,7 @@ import type {ApiErrorResponse, SearchLearningPokemonsRequest, SearchLearningPoke
  */
 export function useSearchLearningPokemons() {
   return useMutation<SearchLearningPokemonsResponse, Error, SearchLearningPokemonsRequest>({
+    mutationKey: SEARCH_LEARNING_POKEMONS_MUTATION_KEY,
     mutationFn: async ({moveIds, genNumber}: SearchLearningPokemonsRequest) => {
       const res = await fetch(`/api/search-learning-pokemons`, {
         method: "POST",
