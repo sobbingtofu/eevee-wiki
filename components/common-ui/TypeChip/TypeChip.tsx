@@ -22,17 +22,6 @@ function TypeChip({typeEn, typeKor}: TypeChipProps) {
       ? TYPE_BG_CLASS_MAP[getPokemonTypeByKorType(typeKor)]
       : TYPE_BG_CLASS_MAP.normal;
 
-  console.log(
-    "TypeChip rendered. typeEn: ",
-    typeEn,
-    " typeKor: ",
-    typeKor,
-    " finalTypeText: ",
-    finalTypeText,
-    " typeBgClass: ",
-    typeBgClass,
-  );
-
   return (
     <div className={`px-2 py-1 rounded-md text-xs text-textWhite leading-none font-bold ${typeBgClass}`}>
       {finalTypeText}
