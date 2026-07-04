@@ -17,7 +17,6 @@ const ARROW_KEYDOWN_THROTTLE_DELAY = 80;
 function SearchInput({
   outSideClickDropdownClose = true,
   handleClickDropdownItem = (item) => {
-    console.log("handleClickDropdownItem not defined. clicked item : ", item);
     return;
   },
 }: SearchInputProps) {
@@ -186,6 +185,7 @@ function SearchInput({
             <GrayColoredCloseIcon onClick={handleClickCloseIcon} />
           </div>
         )}
+
         {/* 검색결과 드롭다운 */}
         {isDropdownOpen && (
           <SearchResultDropdown

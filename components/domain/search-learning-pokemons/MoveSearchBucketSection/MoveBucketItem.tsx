@@ -1,4 +1,5 @@
 import PlainCloseIcon from "@/components/common-ui/CloseIcons/PlainCloseIcon";
+import {Loader} from "@/components/common-ui/Loader/Loader";
 import TypeChip from "@/components/common-ui/TypeChip/TypeChip";
 import {useMoveBrief} from "@/queries/moveQueries";
 import {DAMAGE_CLASS_MAP} from "@/store/constantStore";
@@ -9,15 +10,39 @@ interface MoveBucketItemProps {
 }
 
 export function MoveBucketItem({moveId}: MoveBucketItemProps) {
-  const {removeMoveBucketId} = useMoveBucketContext();
+  const {removeMoveBucketId, moveBucketPreviews} = useMoveBucketContext();
   const {data: moveBrief, isLoading, isError} = useMoveBrief(moveId);
+
+  const preview = moveBucketPreviews[moveId];
 
   const handleClickRemoveBtn = () => {
     removeMoveBucketId(moveId);
   };
 
   if (isLoading) {
-    return <p className="text-xs text-gray-500">기술 정보를 불러오는 중...</p>;
+    // 드롭다운에서 이미 가져온 기술 명/타입이 있으면 먼저 표시하고, 상세 정보만 로딩 처리
+    if (preview) {
+      return (
+        <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-700 relative group">
+          {/* 타입과 이름 (미리보기) */}
+          <div className="flex items-center gap-3 mb-2">
+            <TypeChip typeKor={preview.korType} />
+            <h3 className="font-bold text-slate-200 text-lg">{preview.koreanName}</h3>
+          </div>
+
+          {/* 상세 정보 로딩 안내 */}
+          <div className="h-[67px] flex justify-center items-center">
+            <Loader sizeType="small" />
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="h-[67px] flex justify-center items-center">
+        <Loader />
+      </div>
+    );
   }
 
   if (isError || !moveBrief) {

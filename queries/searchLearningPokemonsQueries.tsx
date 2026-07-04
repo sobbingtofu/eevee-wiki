@@ -28,7 +28,6 @@ import type {ApiErrorResponse, SearchLearningPokemonsRequest, SearchLearningPoke
  * // 또는 async/await 패턴
  * const handleSearch = async () => {
  *   const result = await mutateAsync({ moveIds: [7, 9], genNumber: 9 });
- *   console.log(result); // SearchLearningPokemonsResponse
  * };
  */
 export function useSearchLearningPokemons() {

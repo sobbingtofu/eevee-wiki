@@ -11,7 +11,7 @@ export const TYPE_MAP_EN_TO_KOR: {[key in pokemonType]: pokemonTypeKor} = {
   bug: "벌레",
   ghost: "고스트",
   steel: "강철",
-  fire: "불",
+  fire: "불꽃",
   water: "물",
   grass: "풀",
   electric: "전기",
