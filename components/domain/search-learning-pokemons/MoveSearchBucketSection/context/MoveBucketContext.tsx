@@ -34,6 +34,7 @@ export function MoveBucketProvider({children}: {children: ReactNode}) {
   const removeMoveBucketId = useCallback((moveId: number) => {
     setMoveBucketIds((prev) => prev.filter((id) => id !== moveId));
     setMoveBucketPreviews((prev) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const {[moveId]: _removed, ...rest} = prev;
       return rest;
     });
