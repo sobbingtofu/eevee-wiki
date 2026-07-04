@@ -46,7 +46,20 @@ export function MoveBucketItem({moveId}: MoveBucketItemProps) {
   }
 
   if (isError || !moveBrief) {
-    return <p className="text-xs text-red-500">기술 정보를 불러오지 못했습니다. (ID: {moveId})</p>;
+    return (
+      <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-700 relative group">
+        {/* 닫기버튼 (로드 실패한 항목도 제거 가능하도록) */}
+        <button
+          type="button"
+          className="absolute top-[8px] right-[8px] text-slate-500 p-2 cursor-pointer"
+          onClick={handleClickRemoveBtn}
+        >
+          <PlainCloseIcon className="w-3 h-3" />
+        </button>
+
+        <p className="text-xs text-red-500">기술 정보를 불러오지 못했습니다. (ID: {moveId})</p>
+      </div>
+    );
   }
 
   return (

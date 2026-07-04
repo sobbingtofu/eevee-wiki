@@ -1,15 +1,17 @@
-import Image from "next/image";
-import {PropsWithChildren} from "react";
-import CloseIconUrl from "@/public/icon/cancel-icon-silver.png";
+import PlainCloseIcon from "./PlainCloseIcon";
 
 interface CloseIconProps {
   onClick?: () => void;
 }
 
-export const GrayColoredCloseIcon = ({onClick}: PropsWithChildren<CloseIconProps>) => {
+/**
+ * 회색 X(닫기) 아이콘
+ * - currentColor 기반 인라인 SVG(PlainCloseIcon)를 재사용하여 색상은 text-slate-400로 지정
+ */
+export const GrayColoredCloseIcon = ({onClick}: CloseIconProps) => {
   return (
-    <div className="select-none cursor-pointer" onClick={onClick}>
-      <Image src={CloseIconUrl} alt="CloseIcon" width={20} height={20} />
+    <div className="select-none cursor-pointer text-slate-400" onClick={onClick}>
+      <PlainCloseIcon className="w-5 h-5" />
     </div>
   );
 };

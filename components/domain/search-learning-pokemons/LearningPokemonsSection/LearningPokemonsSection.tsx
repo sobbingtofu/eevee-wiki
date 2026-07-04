@@ -7,7 +7,7 @@ import {useSearchLearningPokemonsQuery} from "@/queries/searchLearningPokemonsQu
 
 import LearningPokemonCard from "./LearningPokemonCard/LearningPokemonCard";
 import SearchControls from "./SearchControls/SearchControls";
-import SearchedMoveChip from "./SearchMoveChip/SearchMoveChip";
+import SearchMoveChip from "./SearchMoveChip/SearchMoveChip";
 
 function LearningPokemonsSection() {
   const {sortKey, sortDirection, genNumber, learnMethods, committedMoveIds, hasSearched} = useLearningSearchContext();
@@ -71,7 +71,7 @@ function LearningPokemonsSection() {
             </h2>
             <div className="flex flex-wrap gap-2 mt-3">
               {committedMoveIds.map((moveId) => (
-                <SearchedMoveChip key={moveId} moveId={moveId} />
+                <SearchMoveChip key={moveId} moveId={moveId} />
               ))}
             </div>
           </div>
