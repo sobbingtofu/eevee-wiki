@@ -4,7 +4,9 @@ import useMoveKoreanName from "@/hooks/useMoveKoreanName";
 function SearchMoveChip({moveId}: {moveId: number}) {
   const name = useMoveKoreanName(moveId);
   return (
-    <span className="px-4 py-1.5 rounded-full border border-primary1/60 text-primary1 text-sm font-bold">{name}</span>
+    <span className="px-4 py-1.5 rounded-full border border-primary1/60 text-primary1 text-xs lg:text-sm font-bold">
+      {name}
+    </span>
   );
 }
 

@@ -18,11 +18,15 @@ const SORT_KEY_OPTIONS = POKEMON_SORT_KEYS.map((k) => ({value: k, label: POKEMON
 const GEN_OPTIONS = Array.from({length: 9}, (_, i) => ({value: i + 1, label: `${i + 1}세대`}));
 const LEARN_METHOD_OPTIONS = LEARN_METHOD_FILTERS.map((m) => ({value: m, label: LEARN_METHOD_KOR[m]}));
 
+interface SearchControlsProps {
+  className?: string;
+}
+
 /**
  * 헤더의 정렬/필터 컨트롤 4종
  * - 모두 공유 컨텍스트에 바인딩되어 있어, 값 변경 시 queryKey가 바뀌며 즉시 재검색됨
  */
-function SearchControls() {
+function SearchControls({className}: SearchControlsProps) {
   const {
     sortKey,
     sortDirection,
@@ -35,16 +39,20 @@ function SearchControls() {
   } = useLearningSearchContext();
 
   return (
-    <div className="flex gap-3">
-      <SelectDropdown options={SORT_DIRECTION_OPTIONS} value={sortDirection} onChange={setSortDirection} />
-      <SelectDropdown options={SORT_KEY_OPTIONS} value={sortKey} onChange={setSortKey} />
-      <SelectDropdown options={GEN_OPTIONS} value={genNumber} onChange={setGenNumber} />
-      <CheckboxDropdown
-        label="배우는 방법"
-        options={LEARN_METHOD_OPTIONS}
-        selected={learnMethods}
-        onToggle={toggleLearnMethod}
-      />
+    <div className={`flex gap-3 flex-col md:flex-row md:w-fit ${className}`}>
+      <div className="flex gap-3">
+        <SelectDropdown options={SORT_DIRECTION_OPTIONS} value={sortDirection} onChange={setSortDirection} />
+        <SelectDropdown options={SORT_KEY_OPTIONS} value={sortKey} onChange={setSortKey} />
+      </div>
+      <div className="flex gap-3">
+        <SelectDropdown options={GEN_OPTIONS} value={genNumber} onChange={setGenNumber} />
+        <CheckboxDropdown
+          label="배우는 방법"
+          options={LEARN_METHOD_OPTIONS}
+          selected={learnMethods}
+          onToggle={toggleLearnMethod}
+        />
+      </div>
     </div>
   );
 }

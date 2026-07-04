@@ -50,7 +50,7 @@ function LearningPokemonsSection() {
     }
     // 6) 결과 그리드
     return (
-      <div className="grid grid-cols-4 gap-5">
+      <div className="grid xl:grid-cols-4 lg:grid-cols-3 md:grid-cols-2 grid-cols-2 gap-5">
         {data.map((pokemon) => (
           <LearningPokemonCard key={pokemon.pokemonId} pokemon={pokemon} moveIds={moveIdsForCards} />
         ))}
@@ -61,12 +61,12 @@ function LearningPokemonsSection() {
   const resultCount = hasSearched && data ? data.length : null;
 
   return (
-    <div className="relative flex-1 h-full">
-      <div className="h-full overflow-y-auto p-8">
+    <div className="relative flex-1 h-full shrink-0 min-w-0 md:w-auto w-full">
+      <div className="h-full overflow-y-auto p-8 w-full">
         {/* 헤더 (항상 표시) */}
-        <div className="flex items-start justify-between mb-8">
+        <div className="w-full flex items-start justify-between mb-8 xl:flex-row flex-col xl:gap-0 gap-5">
           <div>
-            <h2 className="text-3xl font-extrabold text-slate-100">
+            <h2 className="text-2xl lg:text-3xl font-extrabold text-slate-100">
               배우는 포켓몬 {resultCount !== null && <span className="text-primary1">{resultCount}</span>}
             </h2>
             <div className="flex flex-wrap gap-2 mt-3">
@@ -76,7 +76,7 @@ function LearningPokemonsSection() {
             </div>
           </div>
 
-          <SearchControls />
+          <SearchControls className="w-full" />
         </div>
 
         {/* 본문 */}

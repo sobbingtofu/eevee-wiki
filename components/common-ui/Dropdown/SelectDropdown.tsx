@@ -39,14 +39,14 @@ export function SelectDropdown<T extends string | number>({
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800/60 text-sm font-bold text-white cursor-pointer whitespace-nowrap"
+        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800/60 text-xs lg:text-sm font-bold text-white cursor-pointer whitespace-nowrap"
       >
         <span>{selected?.label ?? ""}</span>
         <ChevronIcon className={`w-3 h-3 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 z-20 min-w-[9rem] max-h-64 overflow-y-auto rounded-xl bg-slate-800 border border-slate-700 py-1 shadow-xl">
+        <div className="absolute xl:right-0 right-auto left-0 md:left-auto top-full mt-2 z-20 min-w-[9rem] max-h-64 overflow-y-auto rounded-xl bg-slate-800 border border-slate-700 py-1 shadow-xl">
           {options.map((opt) => (
             <button
               key={String(opt.value)}
@@ -55,10 +55,8 @@ export function SelectDropdown<T extends string | number>({
                 onChange(opt.value);
                 setOpen(false);
               }}
-              className={`w-full text-left px-4 py-2 text-sm cursor-pointer transition-colors ${
-                opt.value === value
-                  ? "text-primary1 font-bold bg-slate-700/50"
-                  : "text-slate-300 hover:bg-slate-700/40"
+              className={`w-full text-left px-4 py-2 text-xs lg:text-sm cursor-pointer transition-colors ${
+                opt.value === value ? "text-primary1 font-bold bg-slate-700/50" : "text-slate-300 hover:bg-slate-700/40"
               }`}
             >
               {opt.label}
