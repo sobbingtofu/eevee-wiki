@@ -199,14 +199,111 @@ export type PokemonMovesResponse = PokemonMoveItem[];
 // ─────────────────────────────────────────
 
 /**
+ * 검색 결과 정렬 기준 (12종)
+ * - "name": 국문명 가나다순
+ * - 단일 스탯: 해당 기본 스탯 값 기준
+ * - 복합("a+b"): 해당 기본 스탯들의 합 기준
+ */
+export type PokemonSortKey =
+  | "name"
+  | "hp"
+  | "attack"
+  | "defense"
+  | "speed"
+  | "specialAttack"
+  | "specialDefense"
+  | "hp+defense"
+  | "hp+specialDefense"
+  | "hp+defense+specialDefense"
+  | "attack+speed"
+  | "specialAttack+speed";
+
+/** 정렬 방향 (오름차순 / 내림차순) */
+export type SortDirection = "asc" | "desc";
+
+/**
+ * 배우는 방법 필터 옵션 (LearnMethod 중 UI에 노출하는 3종)
+ * - 멀티셀렉트, OR 방식(선택된 방법 중 하나라도로 배우면 자격)
+ */
+export type LearnMethodFilter = Extract<LearnMethod, "level-up" | "machine" | "tutor">;
+
+/** PokemonSortKey 전체 목록 (런타임 유효성 검사 / UI 렌더링용) */
+export const POKEMON_SORT_KEYS: readonly PokemonSortKey[] = [
+  "name",
+  "hp",
+  "attack",
+  "defense",
+  "speed",
+  "specialAttack",
+  "specialDefense",
+  "hp+defense",
+  "hp+specialDefense",
+  "hp+defense+specialDefense",
+  "attack+speed",
+  "specialAttack+speed",
+] as const;
+
+/** SortDirection 전체 목록 */
+export const SORT_DIRECTIONS: readonly SortDirection[] = ["asc", "desc"] as const;
+
+/** LearnMethodFilter 전체 목록 */
+export const LEARN_METHOD_FILTERS: readonly LearnMethodFilter[] = ["level-up", "machine", "tutor"] as const;
+
+/** PokemonSortKey → 국문 라벨 (정렬 기준 드롭다운 표기) */
+export const POKEMON_SORT_KEY_LABEL: Record<PokemonSortKey, string> = {
+  name: "가나다순",
+  hp: "HP",
+  attack: "공격",
+  defense: "방어",
+  speed: "스피드",
+  specialAttack: "특공",
+  specialDefense: "특방",
+  "hp+defense": "HP+방어",
+  "hp+specialDefense": "HP+특방",
+  "hp+defense+specialDefense": "HP+방어+특방",
+  "attack+speed": "공격+스피드",
+  "specialAttack+speed": "특공+스피드",
+};
+
+/** SortDirection → 국문 라벨 (정렬 방향 드롭다운 표기) */
+export const SORT_DIRECTION_LABEL: Record<SortDirection, string> = {
+  asc: "오름차순",
+  desc: "내림차순",
+};
+
+/**
+ * PokemonSortKey → 합산 대상 기본 스탯 필드 목록
+ * ("name"은 스탯 정렬이 아니므로 제외)
+ */
+export const SORT_KEY_STAT_FIELDS: Record<Exclude<PokemonSortKey, "name">, StatEntry["statName"][]> = {
+  hp: ["hp"],
+  attack: ["attack"],
+  defense: ["defense"],
+  speed: ["speed"],
+  specialAttack: ["specialAttack"],
+  specialDefense: ["specialDefense"],
+  "hp+defense": ["hp", "defense"],
+  "hp+specialDefense": ["hp", "specialDefense"],
+  "hp+defense+specialDefense": ["hp", "defense", "specialDefense"],
+  "attack+speed": ["attack", "speed"],
+  "specialAttack+speed": ["specialAttack", "speed"],
+};
+
+/**
  * POST /api/search-learning-pokemons
  * Request body
  */
 export interface SearchLearningPokemonsRequest {
   /** 기술 바구니에 담긴 기술 id 배열 (1개 이상) */
   moveIds: number[];
-  /** 검색 대상 세대 번호 (1~9) */
+  /** 검색 대상 세대 번호 (1~9, 단일 선택) */
   genNumber: number;
+  /** 정렬 기준 */
+  sortKey: PokemonSortKey;
+  /** 정렬 방향 */
+  sortDirection: SortDirection;
+  /** 배우는 방법 필터 (1개 이상, OR 방식 / 자격 판정에만 사용) */
+  learnMethods: LearnMethodFilter[];
 }
 
 /**

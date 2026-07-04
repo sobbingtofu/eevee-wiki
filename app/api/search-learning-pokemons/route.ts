@@ -1,7 +1,7 @@
 /**
  * POST /api/search-learning-pokemons
  *
- * 지정된 세대에서 복수의 기술을 모두 배우는 포켓몬 검색
+ * 지정된 세대에서 복수의 기술을 모두 배우는 포켓몬을 정렬 옵션 및 필터에 따라 검색
  *
  * Request body: SearchLearningPokemonsRequest
  *   { moveIds: number[], genNumber: number }
@@ -19,6 +19,8 @@
 import {NextRequest, NextResponse} from "next/server";
 import {supabaseServer} from "@/lib/supabase/server";
 import {fetchGenVersionNames, fetchPokemonTypesMap, fetchLearnInfoMap} from "@/lib/supabase/queryHelpers";
+import {sortLearningPokemons} from "@/lib/supabase/sortLearningPokemons";
+import {LEARN_METHOD_FILTERS, POKEMON_SORT_KEYS, SORT_DIRECTIONS} from "@/types/apiTypes";
 import type {
   SearchLearningPokemonsRequest,
   SearchLearningPokemonsResponse,
@@ -45,9 +47,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json<ApiErrorResponse>({error: "요청 본문이 유효한 JSON이 아닙니다."}, {status: 400});
   }
 
-  const {moveIds, genNumber} = body;
+  const {moveIds, genNumber, sortKey, sortDirection, learnMethods} = body;
 
-  if (!Array.isArray(moveIds) || moveIds.length === 0) {
+  if (!Array.isArray(moveIds) || moveIds.length < 1) {
     return NextResponse.json<ApiErrorResponse>(
       {error: "moveIds는 1개 이상의 기술 ID 배열이어야 합니다."},
       {status: 400},
@@ -59,6 +61,21 @@ export async function POST(request: NextRequest) {
   if (!Number.isInteger(genNumber) || genNumber < 1 || genNumber > 9) {
     return NextResponse.json<ApiErrorResponse>({error: "genNumber는 1~9 사이의 정수여야 합니다."}, {status: 400});
   }
+  if (!POKEMON_SORT_KEYS.includes(sortKey)) {
+    return NextResponse.json<ApiErrorResponse>({error: "sortKey 값이 올바르지 않습니다."}, {status: 400});
+  }
+  if (!SORT_DIRECTIONS.includes(sortDirection)) {
+    return NextResponse.json<ApiErrorResponse>({error: "sortDirection 값이 올바르지 않습니다."}, {status: 400});
+  }
+  if (!Array.isArray(learnMethods) || learnMethods.length === 0) {
+    return NextResponse.json<ApiErrorResponse>(
+      {error: "learnMethods는 1개 이상의 배우는 방법 배열이어야 합니다."},
+      {status: 400},
+    );
+  }
+  if (learnMethods.some((method) => !LEARN_METHOD_FILTERS.includes(method))) {
+    return NextResponse.json<ApiErrorResponse>({error: "learnMethods에 허용되지 않은 값이 있습니다."}, {status: 400});
+  }
 
   // ── Step 1: 해당 세대의 버전명 목록 ──────────────────────────
   const versionNames = await fetchGenVersionNames(genNumber);
@@ -67,12 +84,15 @@ export async function POST(request: NextRequest) {
   }
 
   // ── Step 2: 각 moveId별 배우는 pokemonId 집합을 병렬 조회 ────
+  // 배우는 방법 필터(learnMethods)는 "자격 판정"에만 적용 → 여기서 learnMethod 필터링.
+  // (표시용 학습방법은 Step 6에서 필터 없이 전체 조회하므로 카드에는 모든 방법이 노출됨)
   const idSetPromises = moveIds.map(async (moveId): Promise<Set<number>> => {
     const {data, error} = await supabaseServer
       .from("TB_CXN_POKEMON_MOVES")
       .select("pokemonId")
       .eq("moveId", moveId)
-      .in("versionName", versionNames);
+      .in("versionName", versionNames)
+      .in("learnMethod", learnMethods);
 
     if (error || !data) return new Set();
     return new Set((data as {pokemonId: number}[]).map((r) => r.pokemonId));
@@ -138,5 +158,8 @@ export async function POST(request: NextRequest) {
     };
   });
 
-  return NextResponse.json<SearchLearningPokemonsResponse>(result);
+  // ── Step 7: 정렬 (서버 처리) ─────────────────────────────────
+  const sortedResult = sortLearningPokemons(result, sortKey, sortDirection);
+
+  return NextResponse.json<SearchLearningPokemonsResponse>(sortedResult);
 }
