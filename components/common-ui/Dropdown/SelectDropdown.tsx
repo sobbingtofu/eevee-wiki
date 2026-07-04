@@ -1,6 +1,8 @@
 "use client";
 
-import {useEffect, useRef, useState} from "react";
+import {useRef, useState} from "react";
+import ChevronIcon from "@/components/common-ui/ChevronIcon/ChevronIcon";
+import {useClickOutside} from "@/hooks/useClickOutside";
 
 interface SelectOption<T extends string | number> {
   value: T;
@@ -30,16 +32,7 @@ export function SelectDropdown<T extends string | number>({
 
   const selected = options.find((opt) => opt.value === value);
 
-  useEffect(() => {
-    if (!open) return;
-    const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [open]);
+  useClickOutside(containerRef, () => setOpen(false), open);
 
   return (
     <div ref={containerRef} className={`relative ${className ?? ""}`}>
@@ -49,14 +42,7 @@ export function SelectDropdown<T extends string | number>({
         className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800/60 text-sm font-bold text-white cursor-pointer whitespace-nowrap"
       >
         <span>{selected?.label ?? ""}</span>
-        <svg
-          className={`w-3 h-3 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`}
-          viewBox="0 0 12 12"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+        <ChevronIcon className={`w-3 h-3 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
 
       {open && (

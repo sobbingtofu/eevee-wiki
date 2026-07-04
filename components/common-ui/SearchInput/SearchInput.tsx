@@ -5,6 +5,7 @@ import {Loader} from "../Loader/Loader";
 import {GrayColoredCloseIcon} from "../CloseIcons/GrayColoredCloseIcon";
 import SearchResultDropdown from "./SearchResultDropdown";
 import {useSearchMoves} from "@/queries/moveQueries";
+import {useClickOutside} from "@/hooks/useClickOutside";
 import type {MoveSearchItem} from "@/types/apiTypes";
 
 interface SearchInputProps {
@@ -132,22 +133,15 @@ function SearchInput({outSideClickDropdownClose = true, handleClickDropdownItem 
     };
   }, []);
 
-  // 드롭다운 외부 클릭 시 드롭다운 닫기 기능 구현
-  useEffect(() => {
-    if (outSideClickDropdownClose) {
-      const handleClickOutside = (event: MouseEvent) => {
-        if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
-          setIsDropdownOpen(false);
-          setAccentedDropdownItemIndex(-1);
-        }
-      };
-
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => {
-        document.removeEventListener("mousedown", handleClickOutside);
-      };
-    }
-  }, [outSideClickDropdownClose]);
+  // 드롭다운 외부 클릭 시 드롭다운 닫기 (outSideClickDropdownClose가 true일 때만 활성화)
+  useClickOutside(
+    searchContainerRef,
+    () => {
+      setIsDropdownOpen(false);
+      setAccentedDropdownItemIndex(-1);
+    },
+    outSideClickDropdownClose,
+  );
 
   /**
    * 검색창에 포커스 될 때, 검색값이 빈 문자열이 아니고 검색결과가 존재하면 드롭다운 열기
