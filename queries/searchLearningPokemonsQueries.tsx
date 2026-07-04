@@ -33,11 +33,10 @@ import type {ApiErrorResponse, SearchLearningPokemonsRequest, SearchLearningPoke
 export function useSearchLearningPokemons() {
   return useMutation<SearchLearningPokemonsResponse, Error, SearchLearningPokemonsRequest>({
     mutationFn: async ({moveIds, genNumber}: SearchLearningPokemonsRequest) => {
-      const query = new URLSearchParams({genNumber: genNumber.toString()});
-      moveIds.forEach((moveId) => query.append("moveIds", moveId.toString()));
-
-      const res = await fetch(`/api/search-learning-pokemons?${query.toString()}`, {
-        method: "GET",
+      const res = await fetch(`/api/search-learning-pokemons`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({moveIds, genNumber} satisfies SearchLearningPokemonsRequest),
       });
 
       if (!res.ok) {

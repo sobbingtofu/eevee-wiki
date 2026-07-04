@@ -36,7 +36,7 @@ interface PokemonRow {
   evStats: EvStatEntry[] | null;
 }
 
-export async function GET(request: NextRequest) {
+export async function POST(request: NextRequest) {
   // Step 0: 요청 파싱 및 유효성 검사
   let body: SearchLearningPokemonsRequest;
   try {
