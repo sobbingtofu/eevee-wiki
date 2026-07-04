@@ -14,12 +14,7 @@ interface SearchInputProps {
 
 const ARROW_KEYDOWN_THROTTLE_DELAY = 80;
 
-function SearchInput({
-  outSideClickDropdownClose = true,
-  handleClickDropdownItem = (item) => {
-    return;
-  },
-}: SearchInputProps) {
+function SearchInput({outSideClickDropdownClose = true, handleClickDropdownItem = () => {}}: SearchInputProps) {
   const [searchValue, setSearchValue] = useState("");
   const [isDebouncing, setIsDebouncing] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
