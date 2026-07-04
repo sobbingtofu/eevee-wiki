@@ -12,7 +12,7 @@ import SearchedMoveChip from "./SearchMoveChip/SearchMoveChip";
 function LearningPokemonsSection() {
   const {sortKey, sortDirection, genNumber, learnMethods, committedMoveIds, hasSearched} = useLearningSearchContext();
 
-  const {data, isLoading, isError} = useSearchLearningPokemonsQuery({
+  const {data, isLoading, isFetching, isError} = useSearchLearningPokemonsQuery({
     moveIds: committedMoveIds,
     genNumber,
     sortKey,
@@ -35,13 +35,10 @@ function LearningPokemonsSection() {
     if (!hasSearched) {
       return <CenteredMessage>기술을 담고 &apos;배우는 포켓몬 검색&apos; 버튼을 눌러 주세요.</CenteredMessage>;
     }
-    // 3) 최초 로딩 중 (이전 결과가 없을 때만)
+    // 3) 최초 로딩 중 (이전 결과 없음) → 본문은 비우고 오버레이 로더가 이를 덮음
+    //    ("결과 없음"으로 잘못 떨어지지 않도록 가드만 유지)
     if (isLoading) {
-      return (
-        <div className="w-full h-full min-h-[240px] flex items-center justify-center">
-          <Loader />
-        </div>
-      );
+      return null;
     }
     // 4) 에러
     if (isError) {
@@ -64,25 +61,34 @@ function LearningPokemonsSection() {
   const resultCount = hasSearched && data ? data.length : null;
 
   return (
-    <div className="flex-1 h-full overflow-y-auto p-8">
-      {/* 헤더 (항상 표시) */}
-      <div className="flex items-start justify-between mb-8">
-        <div>
-          <h2 className="text-3xl font-extrabold text-slate-100">
-            배우는 포켓몬 {resultCount !== null && <span className="text-primary1">{resultCount}</span>}
-          </h2>
-          <div className="flex flex-wrap gap-2 mt-3">
-            {committedMoveIds.map((moveId) => (
-              <SearchedMoveChip key={moveId} moveId={moveId} />
-            ))}
+    <div className="relative flex-1 h-full">
+      <div className="h-full overflow-y-auto p-8">
+        {/* 헤더 (항상 표시) */}
+        <div className="flex items-start justify-between mb-8">
+          <div>
+            <h2 className="text-3xl font-extrabold text-slate-100">
+              배우는 포켓몬 {resultCount !== null && <span className="text-primary1">{resultCount}</span>}
+            </h2>
+            <div className="flex flex-wrap gap-2 mt-3">
+              {committedMoveIds.map((moveId) => (
+                <SearchedMoveChip key={moveId} moveId={moveId} />
+              ))}
+            </div>
           </div>
+
+          <SearchControls />
         </div>
 
-        <SearchControls />
+        {/* 본문 */}
+        {renderBody()}
       </div>
 
-      {/* 본문 */}
-      {renderBody()}
+      {/* 검색 요청 중 오버레이 (버튼 클릭·필터·정렬 변경으로 인한 fetch 모두 포함) */}
+      {isFetching && (
+        <div className="absolute inset-0 z-30 flex items-center justify-center bg-slate-950/50">
+          <Loader />
+        </div>
+      )}
     </div>
   );
 }
