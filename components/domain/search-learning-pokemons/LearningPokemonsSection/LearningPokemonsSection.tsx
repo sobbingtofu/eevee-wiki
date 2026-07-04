@@ -1,5 +1,5 @@
 function LearningPokemonsSection() {
-  return <div>LearningPokemonsSection</div>;
+  return <div className="w-full h-full"></div>;
 }
 
 export default LearningPokemonsSection;

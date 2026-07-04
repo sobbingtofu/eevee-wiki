@@ -16,26 +16,27 @@ function TopNaviBar() {
   };
 
   return (
-    <div className="w-full h-16 bg-background absolute border border-b border-[#1e293b] flex items-center justify-between px-8">
+    <div className="w-full h-16 bg-background absolute border border-b border-[#1e293b] flex items-center justify-between md:px-8 px-5">
       {/* 로고, 타이틀 */}
       <Link href="/search-learning-pokemons" className="w-fit h-fit">
-        <div className="flex justify-start items-center gap-4">
+        <div className="flex justify-start items-center md:gap-4 gap-2">
           {/* 로고 */}
           <div className="w-10 h-10 relative ">
             <Image src="/icon/eevee01.png" alt="logo" fill className="object-cover" sizes="40px" priority />
           </div>
 
           {/* 텍스트 */}
-          <h1 className="text-xl font-bold tracking-tight text-textWhite mt-1">이브이 위키</h1>
+          <h1 className="text-base md:text-xl font-bold tracking-tight text-textWhite mt-1">이브이 위키</h1>
         </div>
       </Link>
       {/* 네비게이션 메뉴 */}
-      <div className="flex justify-end items-center gap-8 text-sm">
+      <div className="flex justify-end items-center gap-6 md:gap-8 md:text-sm text-sm">
         <button
           className={getNavClassName(pathname.startsWith("/search-learning-pokemons"))}
           onClick={() => handleNavBtnClick("/search-learning-pokemons")}
         >
-          기술을 배우는 포켓몬
+          기술을 배우는 <br className="block md:hidden" />
+          포켓몬
         </button>
         <button className={getNavClassName(pathname.startsWith("/moves"))} onClick={() => handleNavBtnClick("/moves")}>
           기술

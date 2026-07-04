@@ -28,7 +28,7 @@ function MoveBucket({className}: MoveBucketProps) {
   }, [moveBucketIds.length]);
 
   return (
-    <div className={`w-full h-full ${className}`}>
+    <div className={`w-full ${className}`}>
       <h3 className="text-xs font-bold mb-4 ml-1">검색할 기술 ({moveBucketIds.length}개)</h3>
       <div
         ref={scrollContainerRef}

@@ -9,7 +9,10 @@ function MoveSearchBucketSectionContent() {
   const {addMoveBucketId} = useMoveBucketContext();
 
   return (
-    <div className="w-full sm:w-[360px] h-full p-6 bg-backgroundLight flex flex-col justify-between items-start">
+    <div
+      className="w-full md:w-[360px] h-full p-6 bg-backgroundLight md:min-h-auto min-h-[calc(100vh-64px)]
+          flex flex-col justify-between items-start"
+    >
       <div className="w-full h-[calc(100%-52px-16px)]">
         {/* 기술 검색 - 높이 86px */}
         <div className="w-full h-[86px]">
