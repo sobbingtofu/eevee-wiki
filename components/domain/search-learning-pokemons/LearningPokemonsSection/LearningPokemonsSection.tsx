@@ -74,41 +74,13 @@ function LearningPokemonsSection() {
     return arr;
   }, [data, sortOrder]);
 
-  // ── 상태별 렌더링 ────────────────────────────────────────────
-  // 검색 진행 중
-  if (status === "pending") {
-    return (
-      <div className="flex-1 h-full flex items-center justify-center">
-        <Loader />
-      </div>
-    );
-  }
-
-  // 검색 실패
-  if (status === "error") {
-    return (
-      <div className="flex-1 h-full flex items-center justify-center">
-        <p className="text-sm text-red-400">검색 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.</p>
-      </div>
-    );
-  }
-
-  // 아직 검색 전 (뮤테이션 없음 / idle)
-  if (!data) {
-    return (
-      <div className="flex-1 h-full flex items-center justify-center">
-        <p className="text-sm text-slate-500">기술을 담고 &apos;배우는 포켓몬 검색&apos; 버튼을 눌러 주세요.</p>
-      </div>
-    );
-  }
-
   return (
     <div className="flex-1 h-full overflow-y-auto p-8">
       {/* 헤더 */}
       <div className="flex items-start justify-between mb-8">
         <div>
           <h2 className="text-3xl font-extrabold text-slate-100">
-            배우는 포켓몬 <span className="text-primary1">{data.length}</span>
+            배우는 포켓몬 <span className="text-primary1">{data?.length || ""}</span>
           </h2>
           <div className="flex flex-wrap gap-2 mt-3">
             {moveIds.map((moveId) => (
@@ -137,8 +109,29 @@ function LearningPokemonsSection() {
         </div>
       </div>
 
+      {/* 검색 진행 중 */}
+      {status === "pending" && (
+        <div className="flex-1 h-full flex items-center justify-center">
+          <Loader />
+        </div>
+      )}
+
+      {/* 검색 실패 */}
+      {status === "error" && (
+        <div className="flex-1 h-full flex items-center justify-center">
+          <p className="text-sm text-red-400">검색 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.</p>
+        </div>
+      )}
+
+      {/* 검색 실행 전 */}
+      {status !== "pending" && status !== "error" && !data && (
+        <div className="flex-1 h-full flex items-center justify-center">
+          <p className="text-sm text-slate-500">기술을 담고 &apos;배우는 포켓몬 검색&apos; 버튼을 눌러 주세요.</p>
+        </div>
+      )}
+
       {/* 결과 그리드 / 빈 결과 */}
-      {sortedPokemons.length === 0 ? (
+      {data && sortedPokemons.length === 0 ? (
         <div className="w-full py-20 flex items-center justify-center">
           <p className="text-sm text-slate-500">조건을 모두 만족하는 포켓몬이 없습니다.</p>
         </div>
