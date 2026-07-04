@@ -7,7 +7,7 @@ interface MoveBucketProps {
 }
 
 function MoveBucket({className}: MoveBucketProps) {
-  const {moveBucketIds} = useMoveBucketContext();
+  const {moveBucketIds, clearMoveBucketIds} = useMoveBucketContext();
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const prevBucketCountRef = useRef(moveBucketIds.length);
@@ -29,7 +29,18 @@ function MoveBucket({className}: MoveBucketProps) {
 
   return (
     <div className={`w-full ${className}`}>
-      <h3 className="text-xs font-bold ml-1">검색할 기술 ({moveBucketIds.length}개)</h3>
+      <div className="flex items-center justify-between pl-1 pr-1.5">
+        <h3 className="text-xs font-bold">검색할 기술 ({moveBucketIds.length}개)</h3>
+        <button
+          type="button"
+          onClick={clearMoveBucketIds}
+          className="relative text-xs font-bold text-red-600 cursor-pointer after:content-[''] after:absolute
+            after:left-0 after:bottom-0 after:h-[1.5px] after:w-0 after:bg-red-600 after:transition-[width]
+            after:duration-150 hover:after:w-full"
+        >
+          전체 삭제
+        </button>
+      </div>
       <div
         ref={scrollContainerRef}
         className="w-full mt-4 flex flex-col gap-2 max-h-[calc(100%-32px)] overflow-y-auto [scrollbar-gutter:stable]"
