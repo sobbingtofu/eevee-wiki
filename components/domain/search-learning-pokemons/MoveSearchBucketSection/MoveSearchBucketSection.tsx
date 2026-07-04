@@ -21,7 +21,7 @@ function MoveSearchBucketSectionContent() {
           <SearchInput handleClickDropdownItem={(item) => addMoveBucketId(item)} />
         </div>
         {/* 배우는 포켓몬을 검색할 기술들 담는 양동이 - 높이 100% */}
-        <MoveBucket className="mt-10" />
+        <MoveBucket className="mt-10 h-[calc(100%-86px-40px)]" />
       </div>
 
       {/* 검색 버튼 - 높이 52px */}
