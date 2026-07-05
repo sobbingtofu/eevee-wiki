@@ -9,12 +9,19 @@ interface SearchBtnProps {
 
 function SearchBtn({className}: SearchBtnProps) {
   const {moveBucketIds} = useMoveBucketContext();
-  const {commitSearch} = useLearningSearchContext();
+  const {commitSearch, openBottomSheet} = useLearningSearchContext();
+
+  const handleClickSearch = () => {
+    commitSearch(moveBucketIds);
+    // md 미만에서는 검색 시 결과 바텀시트를 자동으로 연다.
+    // (md 이상에서는 바텀시트가 렌더되지 않으므로 이 호출은 시각적으로 무해)
+    openBottomSheet();
+  };
 
   return (
     <button
       type="button"
-      onClick={() => commitSearch(moveBucketIds)}
+      onClick={handleClickSearch}
       disabled={moveBucketIds.length === 0}
       className={`w-full bg-primary1 cursor-pointer hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed
         text-white font-bold text-sm py-4 rounded-xl transition-all duration-150 shadow-lg shadow-primary1/25

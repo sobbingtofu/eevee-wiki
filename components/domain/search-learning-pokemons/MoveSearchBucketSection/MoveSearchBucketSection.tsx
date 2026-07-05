@@ -25,7 +25,7 @@ function MoveSearchBucketSectionContent() {
       </div>
 
       {/* 검색 버튼 - 높이 52px */}
-      <SearchBtn className="mt-4" />
+      <SearchBtn className="mt-4 md:mb-0 mb-12" />
     </div>
   );
 }
