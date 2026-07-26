@@ -4,7 +4,7 @@
  *  1. useSearchMoves          —  기술 국문명 검색 드롭다운 : 입력한 검색어를 포함하는 기술 목록 반환 (드롭다운용)
  *  2. useMoveBrief            —  단일 기술 간략 정보 : 기술 바구니 UI 표시용 (id, koreanName, korType, power, accuracy, damageClass)
  *  3. useMoveDetail           —  단일 기술 상세 정보 : 기술 상세 페이지용 (MoveBrief 필드 + korDescription, pp, effectChance, priority)
- *  4. useMoveLearningPokemons —  기술을 세대별로 배우는 포켓몬 목록 : 기술 상세 페이지 하단 섹션
+ *  4. useMoveLearningPokemons —  기술을 버전별로 배우는 포켓몬 목록 : 기술 상세 페이지 하단 섹션
  *
  */
 
@@ -36,7 +36,8 @@ export const MOVE_QUERY_KEYS = {
   search: (q: string) => ["moves", "search", q] as const,
   brief: (id: number) => ["moves", "brief", id] as const,
   detail: (id: number) => ["moves", "detail", id] as const,
-  learningPokemons: (id: number, gen: number) => ["moves", "learning-pokemons", id, gen] as const,
+  learningPokemons: (id: number, versionName: string) =>
+    ["moves", "learning-pokemons", id, versionName] as const,
 } as const;
 
 /**
@@ -103,25 +104,28 @@ export function useMoveDetail(id: number | null) {
 }
 
 /**
- * 특정 기술을 특정 세대에서 배우는 포켓몬 목록 반환
+ * 특정 기술을 특정 게임 버전에서 배우는 포켓몬 목록 반환
  * (기술 상세 페이지 하단 섹션)
  *
- * @param id        기술 id (null 전달 시 쿼리 비활성화)
- * @param genNumber 세대 번호 1~9
+ * @param id          기술 id (null 전달 시 쿼리 비활성화)
+ * @param versionName 게임 버전 (useVersions()의 versionName, 빈 문자열이면 비활성화)
  *
  * @example
- * const { data = [] } = useMoveLearningPokemons(7, 9);
+ * const { data = [] } = useMoveLearningPokemons(7, "scarlet-violet");
  * // data → [
  * //   { pokemonId: 4, koreanName: "파이리", spriteUrl: "...",
  * //     korTypes: ["불꽃"],
  * //     learnMethods: [{ learnMethod: "machine", levelLearnedAt: 0, versionName: "scarlet-violet" }] }
  * // ]
  */
-export function useMoveLearningPokemons(id: number | null, genNumber: number) {
+export function useMoveLearningPokemons(id: number | null, versionName: string) {
   return useQuery<MoveLearningPokemonsResponse, Error>({
-    queryKey: MOVE_QUERY_KEYS.learningPokemons(id ?? 0, genNumber),
-    queryFn: () => apiFetch<MoveLearningPokemonsResponse>(`/api/moves/${id}/learning-pokemons?gen=${genNumber}`),
-    enabled: id != null && id > 0 && genNumber >= 1 && genNumber <= 9,
+    queryKey: MOVE_QUERY_KEYS.learningPokemons(id ?? 0, versionName),
+    queryFn: () =>
+      apiFetch<MoveLearningPokemonsResponse>(
+        `/api/moves/${id}/learning-pokemons?version=${encodeURIComponent(versionName)}`,
+      ),
+    enabled: id != null && id > 0 && versionName.length > 0,
     staleTime: 1000 * 60 * 10,
     placeholderData: [],
   });

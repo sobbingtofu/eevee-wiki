@@ -3,7 +3,7 @@
 > 최초 작성: 2026-04-27
 > **전면 개정: 2026-04-27** (PokeAPI 변경사항 반영 → Phase 0 신설)
 > **최종 갱신: 2026-07-26**
-> 상태: **Phase 0~2 완료 / Phase 3~5 진행 예정**
+> 상태: **Phase 0~3 완료 / Phase 4~5 진행 예정**
 > 관련 문서: [`GUIDE-pokeapi-sync.md`](./GUIDE-pokeapi-sync.md)
 
 ---
@@ -119,9 +119,9 @@ const versionNames = await fetchGenVersionNames(genNumber);  // 8 → 3개 버�
 ## 4. Phase별 작업 계획
 
 > **진행 현황 (2026-07-26 기준)**
-> Phase 0 ✅ · Phase 1 ✅ · Phase 2 ✅ · Phase 3~5 미착수
-> → 데이터·API 계층 완료. 남은 것은 프론트엔드(쿼리 훅 + UI).
-> → `npx tsc --noEmit` 에러 2건이 남아 있으며, Phase 3~4에서 해소된다.
+> Phase 0 ✅ · Phase 1 ✅ · Phase 2 ✅ · Phase 3 ✅ · Phase 4~5 미착수
+> → 데이터·API·쿼리 훅 완료. 남은 것은 UI 컴포넌트.
+> → `npx tsc --noEmit` 에러 1건이 남아 있으며, Phase 4에서 해소된다.
 
 ---
 
@@ -323,22 +323,46 @@ ALTER TABLE "TB_ABILITIES" RENAME COLUMN "koreanName" TO "korName";
 
 ---
 
-### Phase 3 — React Query 훅 (4개 파일)
+### Phase 3 — React Query 훅 ✅ **완료 (2026-07-26)**
 
 > `types/apiTypes.ts`는 백엔드가 의존하므로 **Phase 2에서 이미 완료**했다.
 > `VersionInfo`(+`learnMethods`), `LearnMethod.train`, `SearchLearningPokemonsRequest.versionName` 모두 반영됨.
 >
-> **현재 `npx tsc --noEmit` 에러 2건이 남아 있다** — 아래 두 파일이 아직 `genNumber`를 쓰기 때문이며,
-> Phase 3~4를 마치면 해소된다.
-> - `queries/searchLearningPokemonsQueries.tsx`
-> - `components/.../LearningPokemonsSection.tsx`
-
 | 파일 | 변경 |
 |------|------|
-| `queries/versionQueries.tsx` 🆕 | `useVersions()` — `staleTime: Infinity` |
+| `queries/versionQueries.tsx` 🆕 | `useVersions()` — `staleTime: Infinity` + `groupVersionsByGen()` |
 | `queries/pokemonQueries.tsx` | `usePokemonMoves(id, versionName)` |
 | `queries/moveQueries.tsx` | `useMoveLearningPokemons(id, versionName)` |
 | `queries/searchLearningPokemonsQueries.tsx` | queryKey `genNumber` → `versionName` |
+
+#### 실행 결과 (2026-07-26) ✅
+
+- **queryKey가 `versionName` 기준으로 바뀌었다.** 세대 번호로 캐싱하던 시절에는
+  소드·실드와 레전드 아르세우스가 같은 캐시(`8`)를 공유했다. 이제 버전마다 분리된다
+- `useVersions()`는 `staleTime: Infinity` + `gcTime: Infinity`.
+  이 목록은 `npm run sync:pokeapi` 때만 바뀌므로 세션 내내 다시 받을 이유가 없다
+- `placeholderData: []`로 로딩 중에도 배열이라 호출부에 undefined 분기가 필요 없다
+- `enabled`에 `versionName.length > 0` 추가 — 버전 목록 로딩 전 빈 요청을 막는다
+- `versionName`은 `encodeURIComponent`로 감싼다
+
+**`groupVersionsByGen()` 신설** — 드롭다운 그룹 헤더용. `genNumber`는 **표시 그룹을 만드는 데만** 쓴다.
+조회 조건으로 되돌아가면 세대 합집합 문제가 되살아난다.
+
+실제 `/api/versions` 응답으로 검증한 결과가 §3의 UI 목표 형태와 일치한다:
+
+```
+9세대: 포켓몬 챔피언스, 스칼렛·바이올렛
+8세대: 레전드 아르세우스, 브릴리언트 다이아몬드·샤이닝 펄, 소드·실드
+7세대: 레츠고! 피카츄·이브이, 울트라썬·울트라문, 썬·문
+...
+1세대: 옐로, 레드·블루
+```
+그룹 9개 / 총 22개 / 버전 최신순·세대 내림차순 모두 유지 ✓
+
+> `usePokemonMoves`·`useMoveLearningPokemons`는 **아직 소비하는 컴포넌트가 없어**
+> 시그니처 변경의 파급이 없었다. 해당 UI는 아직 구현 전이다.
+
+**남은 `tsc` 에러 1건** — `LearningPokemonsSection.tsx`가 아직 `genNumber`를 넘긴다. Phase 4에서 해소된다.
 
 ---
 
@@ -414,6 +438,7 @@ Phase 2   11  lib/supabase/queryHelpers.ts
                 (TB_POKEMONS·TB_TYPES·TB_GEN_INFO·TB_ABILITIES)
 
 Phase 3    4  queries/versionQueries.tsx                      🆕
+                (useVersions + groupVersionsByGen)
               queries/pokemonQueries.tsx
               queries/moveQueries.tsx
               queries/searchLearningPokemonsQueries.tsx

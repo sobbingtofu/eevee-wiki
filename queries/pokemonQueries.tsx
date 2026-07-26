@@ -3,7 +3,7 @@
  *
  *  1. useSearchPokemons —    포켓몬 국문명 검색 드롭다운
  *  2. usePokemonDetail  —    단일 포켓몬 상세 정보 (타입, 특성 포함)
- *  3. usePokemonMoves   —    포켓몬의 세대별 기술 목록
+ *  3. usePokemonMoves   —    포켓몬의 버전별 기술 목록
  *
  */
 
@@ -28,7 +28,7 @@ async function apiFetch<T>(url: string): Promise<T> {
 export const POKEMON_QUERY_KEYS = {
   search: (q: string) => ["pokemons", "search", q] as const,
   detail: (id: number) => ["pokemons", "detail", id] as const,
-  moves: (id: number, gen: number) => ["pokemons", "moves", id, gen] as const,
+  moves: (id: number, versionName: string) => ["pokemons", "moves", id, versionName] as const,
 } as const;
 
 /**
@@ -92,8 +92,8 @@ export function usePokemonDetail(id: number | null) {
 }
 
 /**
- * 특정 포켓몬이 특정 세대에서 배울 수 있는 기술 목록 반환
- * (포켓몬 상세 페이지 하단 — 세대 탭 선택 후 표시)
+ * 특정 포켓몬이 특정 게임 버전에서 배울 수 있는 기술 목록 반환
+ * (포켓몬 상세 페이지 하단 — 버전 선택 후 표시)
  *
  * 반환 데이터:
  *  - 기술 기본 정보: moveId, koreanName, korType, power, accuracy, pp,
@@ -101,11 +101,14 @@ export function usePokemonDetail(id: number | null) {
  *  - 학습 방법: learnMethods[] (learnMethod, levelLearnedAt, versionName)
  *  - 정렬: 레벨업 기술(levelLearnedAt 오름차순) → 나머지 기술 순
  *
- * @param id        포켓몬 id (null 전달 시 쿼리 비활성화)
- * @param genNumber 세대 번호 1~9
+ * 같은 세대라도 버전에 따라 결과가 크게 다르다.
+ * 가디안(282) 기준 소드·실드 75개 / BDSP 53개 / 레전드 아르세우스 10개.
+ *
+ * @param id          포켓몬 id (null 전달 시 쿼리 비활성화)
+ * @param versionName 게임 버전 (useVersions()의 versionName, 빈 문자열이면 비활성화)
  *
  * @example
- * const { data = [] } = usePokemonMoves(658, 9);
+ * const { data = [] } = usePokemonMoves(658, "scarlet-violet");
  * // data → [
  * //   { moveId: 9, koreanName: "물대포", korType: "물", power: 40, ...
  * //     learnMethods: [{ learnMethod: "level-up", levelLearnedAt: 5, versionName: "scarlet-violet" }] },
@@ -113,11 +116,14 @@ export function usePokemonDetail(id: number | null) {
  * //     learnMethods: [{ learnMethod: "machine", levelLearnedAt: 0, versionName: "scarlet-violet" }] },
  * // ]
  */
-export function usePokemonMoves(id: number | null, genNumber: number) {
+export function usePokemonMoves(id: number | null, versionName: string) {
   return useQuery<PokemonMovesResponse, Error>({
-    queryKey: POKEMON_QUERY_KEYS.moves(id ?? 0, genNumber),
-    queryFn: () => apiFetch<PokemonMovesResponse>(`/api/pokemons/${id}/moves?gen=${genNumber}`),
-    enabled: id != null && id > 0 && genNumber >= 1 && genNumber <= 9,
+    queryKey: POKEMON_QUERY_KEYS.moves(id ?? 0, versionName),
+    queryFn: () =>
+      apiFetch<PokemonMovesResponse>(
+        `/api/pokemons/${id}/moves?version=${encodeURIComponent(versionName)}`,
+      ),
+    enabled: id != null && id > 0 && versionName.length > 0,
     staleTime: 1000 * 60 * 10,
     placeholderData: [],
   });
