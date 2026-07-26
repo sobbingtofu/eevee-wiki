@@ -2,13 +2,13 @@
 
 import {createContext, useCallback, useContext, useMemo, useState, type ReactNode} from "react";
 import {useMediaQuery} from "@/hooks/useMediaQuery";
-import {LEARN_METHOD_FILTERS} from "@/types/apiTypes";
+import {useVersions} from "@/queries/versionQueries";
 import type {LearnMethodFilter, PokemonSortKey, SortDirection} from "@/types/apiTypes";
 
 /**
  * 배우는 포켓몬 검색 페이지 내에서 공유되는 정렬/필터 조건의 상태 타입
  *
- * - 라이브 컨트롤(sortKey/sortDirection/genNumber/learnMethods): 이 값들은 queryKey에 포함되므로 드롭다운 내 클릭에 따라 즉시 재검색 발생
+ * - 라이브 컨트롤(sortKey/sortDirection/versionName/learnMethods): 이 값들은 queryKey에 포함되므로 드롭다운 내 클릭에 따라 즉시 재검색 발생
  * - committedMoveIds: "검색" 버튼 클릭 시에만 버킷 스냅샷으로 확정.
  *   (버킷은 staging이고, 확정된 moveIds만 실제 쿼리 대상)
  * - bottom sheet: md 미만 뷰포트에서 결과 영역을 바텀시트로 표시하기 위한 UI 상태
@@ -16,11 +16,17 @@ import type {LearnMethodFilter, PokemonSortKey, SortDirection} from "@/types/api
 interface LearningSearchContextValue {
   sortKey: PokemonSortKey;
   sortDirection: SortDirection;
-  genNumber: number;
+  /** 검색 대상 게임 버전. 버전 목록 로딩 전에는 빈 문자열 */
+  versionName: string;
   learnMethods: LearnMethodFilter[];
+  /**
+   * 현재 버전에서 실제로 쓸 수 있는 배우는 방법.
+   * 버전마다 다르다 — champions는 "트레이닝"뿐이고, 레전드 아르세우스에는 기술머신이 없다.
+   */
+  availableLearnMethods: LearnMethodFilter[];
   setSortKey: (key: PokemonSortKey) => void;
   setSortDirection: (direction: SortDirection) => void;
-  setGenNumber: (genNumber: number) => void;
+  setVersionName: (versionName: string) => void;
   toggleLearnMethod: (method: LearnMethodFilter) => void;
 
   committedMoveIds: number[];
@@ -46,9 +52,40 @@ const LearningSearchContext = createContext<LearningSearchContextValue | null>(n
 export function LearningSearchProvider({children}: {children: ReactNode}) {
   const [sortKey, setSortKey] = useState<PokemonSortKey>("name");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
-  const [genNumber, setGenNumber] = useState<number>(9);
-  // 기본값: 3종 모두 선택 (별도 해제 전까지 바로 검색 가능)
-  const [learnMethods, setLearnMethods] = useState<LearnMethodFilter[]>([...LEARN_METHOD_FILTERS]);
+
+  // 버전 목록은 세션당 한 번만 받는다 (staleTime: Infinity)
+  const {data: versions = []} = useVersions();
+
+  const [versionName, setVersionNameState] = useState("");
+  // 기본값: 현재 버전에서 가능한 방법 전부 (별도 해제 전까지 바로 검색 가능)
+  const [learnMethods, setLearnMethods] = useState<LearnMethodFilter[]>([]);
+
+  const availableLearnMethods = useMemo(
+    () => versions.find((v) => v.versionName === versionName)?.learnMethods ?? [],
+    [versions, versionName],
+  );
+
+  // 버전 목록이 도착하면 기본 버전을 채운다.
+  // API가 displayOrder 내림차순으로 주므로 첫 원소가 곧 기본값이다.
+  // (effect 대신 렌더 중 조정 — React 권장 패턴)
+  if (versionName === "" && versions.length > 0) {
+    setVersionNameState(versions[0].versionName);
+    setLearnMethods([...versions[0].learnMethods]);
+  }
+
+  /**
+   * 버전을 바꾸면 배우는 방법 선택을 새 버전의 가용 목록으로 초기화한다.
+   *
+   * 그러지 않으면 이전 버전에만 있던 선택이 남아 반드시 0건이 되는 상태가 만들어진다.
+   * (스칼렛·바이올렛의 "기술머신"을 켠 채 champions로 옮기는 경우)
+   */
+  const setVersionName = useCallback(
+    (next: string) => {
+      setVersionNameState(next);
+      setLearnMethods([...(versions.find((v) => v.versionName === next)?.learnMethods ?? [])]);
+    },
+    [versions],
+  );
 
   const [committedMoveIds, setCommittedMoveIds] = useState<number[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
@@ -83,11 +120,12 @@ export function LearningSearchProvider({children}: {children: ReactNode}) {
     () => ({
       sortKey,
       sortDirection,
-      genNumber,
+      versionName,
       learnMethods,
+      availableLearnMethods,
       setSortKey,
       setSortDirection,
-      setGenNumber,
+      setVersionName,
       toggleLearnMethod,
       committedMoveIds,
       hasSearched,
@@ -100,8 +138,10 @@ export function LearningSearchProvider({children}: {children: ReactNode}) {
     [
       sortKey,
       sortDirection,
-      genNumber,
+      versionName,
       learnMethods,
+      availableLearnMethods,
+      setVersionName,
       toggleLearnMethod,
       committedMoveIds,
       hasSearched,

@@ -18,7 +18,7 @@ function LearningPokemonsSection() {
   const {
     sortKey,
     sortDirection,
-    genNumber,
+    versionName,
     learnMethods,
     committedMoveIds,
     hasSearched,
@@ -29,7 +29,7 @@ function LearningPokemonsSection() {
 
   const {data, isLoading, isFetching, isError} = useSearchLearningPokemonsQuery({
     moveIds: committedMoveIds,
-    genNumber,
+    versionName,
     sortKey,
     sortDirection,
     learnMethods,

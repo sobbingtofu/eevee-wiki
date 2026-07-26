@@ -3,7 +3,7 @@
 > 최초 작성: 2026-04-27
 > **전면 개정: 2026-04-27** (PokeAPI 변경사항 반영 → Phase 0 신설)
 > **최종 갱신: 2026-07-26**
-> 상태: **Phase 0~3 완료 / Phase 4~5 진행 예정**
+> 상태: **Phase 0~4 완료 / Phase 5 일부 수동 검증 대기**
 > 관련 문서: [`GUIDE-pokeapi-sync.md`](./GUIDE-pokeapi-sync.md)
 
 ---
@@ -119,9 +119,9 @@ const versionNames = await fetchGenVersionNames(genNumber);  // 8 → 3개 버�
 ## 4. Phase별 작업 계획
 
 > **진행 현황 (2026-07-26 기준)**
-> Phase 0 ✅ · Phase 1 ✅ · Phase 2 ✅ · Phase 3 ✅ · Phase 4~5 미착수
-> → 데이터·API·쿼리 훅 완료. 남은 것은 UI 컴포넌트.
-> → `npx tsc --noEmit` 에러 1건이 남아 있으며, Phase 4에서 해소된다.
+> Phase 0 ✅ · Phase 1 ✅ · Phase 2 ✅ · Phase 3 ✅ · Phase 4 ✅ · Phase 5 일부
+> → **전환 완료.** `tsc` / `eslint` / `npm run build` 모두 통과.
+> → Phase 5 검증 중 "기술 담아 검색 실행"만 수동 확인이 남아 있다.
 
 ---
 
@@ -366,11 +366,11 @@ ALTER TABLE "TB_ABILITIES" RENAME COLUMN "koreanName" TO "korName";
 
 ---
 
-### Phase 4 — UI 컴포넌트 (4개 파일)
+### Phase 4 — UI 컴포넌트 ✅ **완료 (2026-07-26)**
 
 | 파일 | 변경 |
 |------|------|
-| `context/LearningSearchContext.tsx` | `genNumber: number` → `versionName: string` (기본값 `"scarlet-violet"`) |
+| `context/LearningSearchContext.tsx` | `genNumber: number` → `versionName: string` (기본값은 서버가 결정) |
 | `SearchControls/SearchControls.tsx` | `GEN_OPTIONS` 하드코딩 제거 → `useVersions()` |
 | `LearningPokemonsSection.tsx` | 컨텍스트에서 `versionName` 읽어 전달 |
 | `common-ui/Dropdown/SelectDropdown.tsx` | **그룹 헤더(optgroup) 지원 추가** |
@@ -383,6 +383,43 @@ ALTER TABLE "TB_ABILITIES" RENAME COLUMN "koreanName" TO "korName";
 버전을 바꿀 때 현재 선택된 필터가 새 버전에 없으면 정리해야 한다.
 예: 스칼렛·바이올렛(레벨업·기술머신·기술가르침) → champions(트레이닝)로 전환하면
 기존 선택 3개가 모두 무효가 되므로, 새 버전의 가용 목록으로 초기화하는 편이 자연스럽다.
+
+#### 실행 결과 (2026-07-26) ✅
+
+**기본 버전은 코드가 아니라 데이터가 정한다.**
+`useVersions()`가 `displayOrder` 내림차순으로 주므로 **첫 원소를 기본값으로 삼는다**.
+`"scarlet-violet"`을 상수로 박아두지 않았으므로, 기본 버전을 바꾸려면 코드 수정 없이
+`TB_GEN_INFO.displayOrder`만 조정하면 된다.
+
+> 2026-07-26 사용자가 `scarlet-violet`(22) ↔ `champions`(21)를 교체해
+> 스칼렛·바이올렛이 기본값이 되도록 했다.
+> **따라서 `displayOrder`는 순수한 출시 순이 아니라 "표시 우선순위"다.**
+> 동기화 스크립트는 `displayOrder`를 건드리지 않으므로 이 조정은 유지된다.
+
+**`SelectDropdown` 그룹 지원** — `groups` prop을 따로 두는 대신 `SelectOption.group?`를 추가했다.
+옵션 배열은 평평하게 유지되고, 직전 옵션과 그룹이 달라지는 지점에만 헤더를 끼운다.
+`group`을 안 쓰는 기존 호출부(정렬 방향·정렬 기준)는 그대로 동작한다.
+
+**버전 전환 시 배우는 방법 자동 초기화** — 새 버전의 가용 목록으로 교체한다.
+이전 버전에만 있던 선택이 남아 반드시 0건이 되는 상태를 원천 차단한다.
+
+#### 브라우저 실측 ✅
+
+| 검증 | 결과 |
+|------|------|
+| 기본 버전 | 스칼렛·바이올렛 |
+| 드롭다운 | 22개 · 세대별 그룹 헤더(9세대~1세대) · §3 목표 형태와 일치 |
+| 스칼렛·바이올렛 | 레벨업 · 기술머신 · 기술가르침 (3) |
+| **포켓몬 챔피언스** | **트레이닝 (1)** — 자동 체크됨 |
+| **레전드 아르세우스** | **레벨업 · 기술가르침 (2)** — 기술머신 사라짐 |
+| 콘솔 에러 | 0건 |
+| `npm run build` | 성공 (`/api/versions` 라우트 등록 확인) |
+| `npx tsc --noEmit` / `eslint` | 0건 |
+
+> ⚠️ **UI로 끝까지 확인하지 못한 것**: 기술을 담아 실제 검색을 실행하는 흐름.
+> 기술 검색 입력이 브라우저 자동화(IME)로 트리거되지 않았다.
+> 해당 컴포넌트는 이번 변경 대상이 아니며, **검색 자체는 API 레벨에서 검증했다**
+> (champions + 파괴광선 → 205마리). 수동 확인이 필요한 유일한 항목이다.
 
 ---
 
@@ -457,10 +494,10 @@ Phase 4    4  components/.../context/LearningSearchContext.tsx
 
 ## 6. 남은 논의거리 (구현 시점 결정)
 
-- [ ] `SelectDropdown` 그룹 지원 — 기존 확장 vs 신규 컴포넌트 분리
-- [ ] 버전 기본값 — `scarlet-violet` 고정 vs `displayOrder` 최대값 자동
-      (최대값 자동이면 champions가 기본이 된다. 트레이닝 필터 하나뿐인 화면이 첫인상으로 적절한지 판단 필요)
-- [ ] 버전 전환 시 배우는 방법 필터 초기화 정책 — 전체 선택 vs 교집합 유지
+- [x] ~~`SelectDropdown` 그룹 지원~~ → 기존 컴포넌트에 `SelectOption.group?` 추가로 해결 (Phase 4)
+- [x] ~~버전 기본값~~ → `displayOrder` 최대값 자동. 사용자가 `displayOrder`를 조정해
+      스칼렛·바이올렛이 기본이 되도록 했다 (Phase 4)
+- [x] ~~버전 전환 시 배우는 방법 필터 초기화 정책~~ → 새 버전의 가용 목록으로 교체 (Phase 4)
 - [ ] 포켓몬 상세에서 "이 버전에 미등장" 케이스 UI 처리
 - [x] ~~`champions` 한국어명~~ → "포켓몬 챔피언스" 확정 (Phase 1)
 - [x] ~~신규 기술 발견 시 `TB_MOVES` 자동 추가 정책~~ → 스크립트가 자동 삽입 + 한국어명 없으면 리포트에 경고 (Phase 0)
