@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# 데이터 동기화 캐시/리포트 (scripts/sync-pokeapi.mjs)
+/.cache

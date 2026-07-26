@@ -1,7 +1,7 @@
 # 가이드 — 포켓몬 데이터 최신화 (PokeAPI 동기화)
 
-> 최초 작성: 2026-04-27
-> 상태: **설계 완료 / 스크립트 미구현**
+> 최초 작성: 2026-04-27 · 최종 갱신: 2026-07-26
+> 상태: **구현 완료** — `scripts/sync-pokeapi.mjs`
 > 관련 문서: [`ROADMAP-version-based-moves.md`](./ROADMAP-version-based-moves.md)
 
 ---
@@ -37,6 +37,26 @@ npm run sync:pokeapi -- --dry-run
 # 2) 실제 적용
 npm run sync:pokeapi
 ```
+
+### 옵션
+
+| 플래그 | 설명 |
+|--------|------|
+| `--dry-run` | DB에 쓰지 않고 리포트만 출력 |
+| `--refresh` | 디스크 캐시를 무시하고 PokeAPI 재호출 |
+| `--limit N` | 앞에서 N마리만 처리 (동작 확인용) |
+| `--concurrency N` | 동시 요청 수 (기본 10) |
+
+응답은 `.cache/pokeapi/` 에 캐시되므로 `--dry-run` 직후 실제 실행은 재호출 없이 끝난다.
+**PokeAPI 변경분을 실제로 가져오려면 `--refresh`가 필요하다.**
+리포트 JSON은 `.cache/reports/` 에 실행마다 쌓인다. (`.cache`는 gitignore 대상)
+
+### 안전장치
+
+- 대상 22개 버전 중 `TB_GEN_INFO`에 없는 것이 있으면 **FK 위반 전에 중단**한다
+- 포켓몬 수집이 한 건이라도 실패하면 불완전 반영을 막기 위해 **중단**한다
+- 총 행 수 변동이 ±30%를 넘으면 중단한다 (검토 후 `SAFETY_OVERRIDE=1`로 강행 가능)
+- 전량 교체이므로, 실행 전 `BAK_TB_CXN_POKEMON_MOVES_<날짜>` 백업 테이블을 떠 두길 권장한다
 
 **권장 주기:** 월 1회 + 포켓몬 Champions 패치 노트 발표 직후
 
@@ -142,20 +162,22 @@ WHERE "versionName" = 'legends-za';
 
 ## 6. 신규 기술이 나타났을 때
 
-Champions 패치로 신규 기술이 추가되면 `TB_MOVES`에 행은 생기지만
-`koreanName`·`korDescription`이 비어 있다.
+Champions 패치로 신규 기술이 추가되면 스크립트가 `TB_MOVES`에 행을 자동 삽입한다.
+이때 PokeAPI가 한국어를 제공하지 않으면 `korName`·`korDescription`이 비어 있다.
+
+> `TB_MOVES`의 한국어 컬럼명은 `korName` / `korDescription`이다.
+> (`TB_ABILITIES`와 달리 `altKorName` 계열 폴백 컬럼이 없다.)
 
 ### 보완 절차
 
 ```
-1. PokeAPI /move/{id} 재조회
-   names[]         에서 language.name === "ko" 탐색
-   flavor_text_entries[] 에서 ko 마지막 항목 탐색
+1. 스크립트가 /move/{id}를 조회해 자동 처리
+   names[]               에서 language.name === "ko"  → korName
+   flavor_text_entries[] 에서 ko 마지막 항목          → korDescription
         ↓
-2. ko가 있으면       → koreanName / korDescription 채움
-   ko가 없으면       → altKorName / altKorDescription 사용
+2. ko가 없으면 리포트에 "공식 한국어명 수동 보완 필요"로 출력됨
         ↓
-3. alt 컬럼은 웹 검색으로 공식 한국어명 확인 후 수동 입력
+3. 웹 검색으로 공식 한국어명 확인 후 UPDATE
 ```
 
 > ⚠️ **주의:** 영문명을 직역하지 말 것.
@@ -196,7 +218,7 @@ FROM "TB_CXN_POKEMON_MOVES";
 -- ③ 한국어명 없는 기술 (신규 기술 보완 대상)
 SELECT "id", "name"
 FROM "TB_MOVES"
-WHERE "koreanName" IS NULL AND "altKorName" IS NULL
+WHERE "korName" IS NULL
 ORDER BY "id";
 
 -- ④ 가디안 회귀 테스트 (버전별 기술 수가 유의미하게 다른지)
@@ -215,6 +237,16 @@ ORDER BY move_count DESC;
 |------|------|------|
 | 2026-01-XX | 최초 수집 | 556,738행 / 23개 버전 |
 | 2026-04-27 | 변경 감지 (수동 조사) | BDSP 이름 변경·champions 데이터 발견 |
-| — | *Phase 0 실행 예정* | — |
+| 2026-07-26 | **Phase 0 — 전면 재수집** | 556,738행 → **542,723행** / 22개 버전 |
+
+### 2026-07-26 상세
+
+- ➕ `champions` 13,545행 신규 확보 (가디안 기준 80개 기술)
+- ♻️ BDSP를 `brilliant-diamond-shining-pearl`로 이관 (24,324행, 행 수 동일)
+- ➖ `colosseum` 12,601 / `xd` 14,965행 제거 (본편 아님 — 대상에서 제외)
+- 기존 20개 버전은 사실상 무변동 (`firered-leafgreen` −2, `scarlet-violet` +8)
+- 신규 기술 0개, 미지의 버전 0개
+- 실행 전 백업: `BAK_TB_CXN_POKEMON_MOVES_20260726`
+- 남은 일: `TB_GEN_INFO`의 `displayOrder` 재정렬 및 구 BDSP 행 정리 → Phase 1
 
 > 실행할 때마다 이 표에 한 줄씩 추가할 것.
