@@ -387,9 +387,12 @@ ALTER TABLE "TB_ABILITIES" RENAME COLUMN "koreanName" TO "korName";
 #### 실행 결과 (2026-07-26) ✅
 
 **기본 버전은 코드가 아니라 데이터가 정한다.**
-`useVersions()`가 `displayOrder` 내림차순으로 주므로 **첫 원소를 기본값으로 삼는다**.
 `"scarlet-violet"`을 상수로 박아두지 않았으므로, 기본 버전을 바꾸려면 코드 수정 없이
-`TB_GEN_INFO.displayOrder`만 조정하면 된다.
+`TB_GEN_INFO.displayOrder`만 조정하면 된다. (`displayOrder` **최댓값**이 기본 선택)
+
+> Phase 6에서 `groupLabel`이 생기며 **목록 순서와 기본 선택이 분리**됐다.
+> 처음엔 "배열 첫 원소 = 기본값"이었지만, 단독 타이틀이 맨 앞으로 오면서
+> 첫 원소가 챔피언스가 됐다. 그래서 이제 `displayOrder` 최댓값을 명시적으로 고른다.
 
 > 2026-07-26 사용자가 `scarlet-violet`(22) ↔ `champions`(21)를 교체해
 > 스칼렛·바이올렛이 기본값이 되도록 했다.
@@ -502,3 +505,97 @@ Phase 4    4  components/.../context/LearningSearchContext.tsx
 - [x] ~~`champions` 한국어명~~ → "포켓몬 챔피언스" 확정 (Phase 1)
 - [x] ~~신규 기술 발견 시 `TB_MOVES` 자동 추가 정책~~ → 스크립트가 자동 삽입 + 한국어명 없으면 리포트에 경고 (Phase 0)
       *2026-07-26 동기화 기준 신규 기술 0개라 아직 실제로 겪지는 않았다*
+
+---
+
+## Phase 6 — 드롭다운 그룹 분리 & 응답 지연 개선 (2026-07-26) ✅
+
+### 6-1. 포켓몬 챔피언스를 단독 항목으로
+
+`TB_GEN_INFO`에 `groupLabel text NULL` 추가. `NULL`이면 세대에 묶이지 않는 단독 타이틀이고,
+목록 최상단에 헤더 없이 표시된다.
+
+`displayOrder`를 23으로 올려 맨 위로 보내는 방법도 있었지만, 그러면 기본 선택까지 챔피언스로 넘어간다.
+**"어디에 그리는가"와 "무엇을 처음 고르는가"는 다른 축**이라 컬럼을 나눴다.
+
+- 정렬: `groupLabel IS NULL` 먼저 → `displayOrder` DESC (`fetchPlayableVersions()`에서 JS 정렬)
+- 기본 선택: `displayOrder` 최댓값 = 스칼렛·바이올렛 (22) — 변함없음
+- `groupVersionsByGen()` 제거 — 그룹이 데이터로 표현되면서 불필요해졌다
+
+### 6-2. 응답 지연 — 원인이 셋 다 달랐다
+
+| 사용자 측정 | 실제 원인 | 조치 | 결과 |
+| --- | --- | --- | --- |
+| 배우는 포켓몬 검색 1053ms | **인덱스 부재** | 커버링 인덱스 추가 | DB 1497ms → **4.6ms** |
+| 기술 드롭다운 443ms | 디바운스 400ms (서버는 ~40ms) | 250ms로 단축 | 체감 ~290ms |
+| 기술 담기 1014ms | 왕복 2회 + dev 컴파일 | 타입 캐시로 왕복 1회 제거, 가리킬 때 prefetch | 클릭 시점엔 캐시 적중 |
+
+#### 인덱스 (가장 컸다)
+
+`TB_CXN_POKEMON_MOVES`(54만 행)의 PK는 `(pokemonId, moveId, versionName, learnMethod)`인데
+검색은 `moveId`부터 건다. **선두 컬럼이 비어 인덱스를 탐색하지 못하고 전 구간을 훑고 있었다.**
+
+```sql
+CREATE INDEX "TB_CXN_POKEMON_MOVES_move_version_idx"
+  ON "TB_CXN_POKEMON_MOVES" ("moveId", "versionName", "learnMethod", "pokemonId");
+```
+
+마지막 `pokemonId`는 index-only scan용(커버링). `Buffers: 4184 → 10`.
+
+> 세대 단위였던 시절엔 `.in("versionName", [...])`라 어차피 느렸고,
+> 데이터도 지금의 절반이라 티가 덜 났다. 버전 단위 전환으로 접근 패턴이 고정되면서
+> 비로소 인덱스를 걸 수 있는 모양이 됐다.
+
+#### 왕복 횟수
+
+- `TB_TYPES`(18행, 사실상 불변)를 매 요청 조회하고 있었다 → 프로세스 내 캐시.
+  brief·detail·search 모든 경로에서 왕복 1회씩 사라진다.
+- `search-learning-pokemons`의 Step 3·4·5는 서로 의존하지 않는데 순차 `await`였다 → `Promise.all`.
+  순차 4회 → 2라운드.
+
+#### brief 대기 제거 — 한 번 잘못 짚었다가 되돌린 부분
+
+**처음 시도(폐기):** `/api/moves/search`가 `MoveBrief` 전체를 반환하게 하고,
+클릭 시 `setQueryData`로 brief 캐시를 심어 요청 자체를 없앴다.
+
+**되돌린 이유:** 검색과 brief를 분리해 둔 것은 원래 설계의 의도였는데 그걸 지웠다.
+
+- 검색은 **후보 N건**, brief는 **고른 1건**이다. 둘은 필요해지는 시점도 캐시 수명도 다르다.
+  `MoveSearchItem = MoveBrief`로 묶으면 검색 응답이 *바구니 카드의 표시 항목*에 끌려다닌다.
+  카드에 PP를 넣고 싶어지는 날 검색 응답이 또 커진다.
+- `SearchInput`은 `common-ui`에 있는데, 그 계약이 도메인 컴포넌트의 표시 항목에 묶인다.
+- 무엇보다 **얻는 게 생각보다 작았다.** 바구니 카드는 이미 드롭다운에서 받은
+  이름·타입으로 미리보기를 즉시 그린다. 지워지는 건 "빈 카드 90ms"가 아니라
+  "스탯 줄에 뜨는 작은 로더 90ms"다.
+- 비용은 **선택하든 말든 모든 검색이** 낸다. 이득은 선택할 때 한 번만 생긴다.
+
+> 바이트 자체는 문제가 아니었다 — 실측상 20건 기준 추가 약 2.4KB다.
+> 잘못은 계약을 섞은 쪽이었고, 나는 그걸 왕복 1회로 정당화했다.
+
+**채택안: 가리킬 때 미리 가져오기.**
+
+두 API는 그대로 두고, 드롭다운 항목에 **호버하거나 방향키로 이동한 시점**에
+`queryClient.prefetchQuery`로 brief를 미리 받는다. 가리킨 뒤 클릭까지 보통 수백 ms가 뜨므로
+실제로 담을 때는 캐시 적중이다.
+
+- 계약은 분리된 채로 유지된다 (`SearchResultDropdown`은 `onResultItemFocus`만 호출할 뿐
+  그게 무엇에 쓰이는지 모른다 — prefetch는 도메인 컴포넌트가 한다)
+- 요청은 **실제로 가리킨 항목**에만 나간다. 후보 20건 전체가 아니다
+- `staleTime`을 훅과 공유하므로(`moveBriefQueryOptions`) 같은 항목을 여러 번 지나가도 요청은 한 번
+
+### 실측 (프로덕션 빌드, warm)
+
+| 엔드포인트 | 응답 |
+| --- | --- |
+| `/api/moves/search?q=문포` | 173ms |
+| `/api/moves/[id]/brief` | 91ms — *클릭 전에 미리 나가므로 대기로 체감되지 않음* |
+| `POST /api/search-learning-pokemons` (SV, 파괴광선 → 432마리) | 440ms |
+| 〃 (champions → 205마리) | 309ms |
+
+회귀 지표 유지 확인: SV 432마리 / champions 205마리.
+
+### 남은 여지
+
+`search-learning-pokemons` 440ms 중 상당 부분은 Supabase 왕복 2라운드와 **241KB 응답 전송**이다.
+더 줄이려면 Postgres 함수(RPC)로 묶어 1왕복으로 만들거나, 결과를 페이지네이션해야 한다.
+지금 구조를 크게 건드려야 해서 보류한다.

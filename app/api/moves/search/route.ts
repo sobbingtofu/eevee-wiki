@@ -5,6 +5,9 @@
  *
  * @param q - 국문 기술명 검색어 (예: "펀치")
  * @returns MoveSearchResponse - { id, koreanName, korType }[] (최대 20건)
+ *
+ * 드롭다운이 그리는 것만 담는다. 상세 정보는 항목을 고른 뒤
+ * `/api/moves/[id]/brief`가 따로 가져온다 — 후보 20건이 아니라 고른 1건만 필요하므로.
  */
 import {NextRequest, NextResponse} from "next/server";
 import {supabaseServer} from "@/lib/supabase/server";

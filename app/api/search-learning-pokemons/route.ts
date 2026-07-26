@@ -122,12 +122,21 @@ export async function POST(request: NextRequest) {
 
   const pokemonIds = [...qualifyingIds];
 
-  // ── Step 3: 포켓몬 기본 정보 조회 ────────────────────────────
-  const {data: pokemons, error: pokErr} = await supabaseServer
-    .from("TB_POKEMONS")
-    .select("pokemonId, korName, spriteUrl, stats, evStats")
-    .in("pokemonId", pokemonIds)
-    .order("pokemonId");
+  // ── Step 3~5: 기본 정보 / 타입 / 학습방법 조회 ────────────────
+  // 셋 다 pokemonIds만 있으면 되고 서로 의존하지 않는다.
+  // 순차로 await하면 왕복 지연이 그대로 누적되므로 함께 띄운다.
+  const [pokemonResult, typesMap, learnInfoMap] = await Promise.all([
+    supabaseServer
+      .from("TB_POKEMONS")
+      .select("pokemonId, korName, spriteUrl, stats, evStats")
+      .in("pokemonId", pokemonIds)
+      .order("pokemonId"),
+    fetchPokemonTypesMap(pokemonIds),
+    // Map<pokemonId, Map<moveId, MoveLearnEntry[]>>
+    fetchLearnInfoMap(pokemonIds, moveIds, versionName),
+  ]);
+
+  const {data: pokemons, error: pokErr} = pokemonResult;
 
   if (pokErr) {
     console.error("[search-learning-pokemons] 포켓몬 정보 조회 오류:", pokErr.message);
@@ -137,13 +146,6 @@ export async function POST(request: NextRequest) {
   if (!pokemons || pokemons.length === 0) {
     return NextResponse.json<SearchLearningPokemonsResponse>([]);
   }
-
-  // ── Step 4: 타입 정보 조회 ────────────────────────────────────
-  const typesMap = await fetchPokemonTypesMap(pokemonIds);
-
-  // ── Step 5: 각 포켓몬-기술 조합의 버전 내 학습방법 조회 ───────
-  // Map<pokemonId, Map<moveId, MoveLearnEntry[]>>
-  const learnInfoMap = await fetchLearnInfoMap(pokemonIds, moveIds, versionName);
 
   // ── 응답 조립 ────────────────────────────────────────────────
   const result: SearchLearningPokemonsResponse = (pokemons as PokemonRow[]).map((p): LearningPokemonItem => {

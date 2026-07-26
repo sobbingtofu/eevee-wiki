@@ -71,9 +71,21 @@ export interface VersionInfo {
   /** TB_GEN_INFO.versionName — 조회 시 실제로 쓰는 식별자 */
   versionName: string;
   koreanName: string;
-  /** 소속 세대 (UI 그룹 헤더 표기용) */
+  /** 소속 세대 (참고용 메타데이터, 그룹 헤더는 groupLabel로 표시한다) */
   genNumber: number;
-  /** 출시 순 1~22 */
+  /**
+   * 드롭다운 그룹 헤더 문구 (예: "9세대").
+   *
+   * null이면 어느 세대에도 묶이지 않는 단독 타이틀이라는 뜻이고,
+   * 목록 최상단에 헤더 없이 단독으로 표시된다. (포켓몬 챔피언스)
+   */
+  groupLabel: string | null;
+  /**
+   * 표시 우선순위 1~22. 값이 가장 큰 버전이 **초기 선택 버전**이 된다.
+   * (출시 순이 아니다 — 기본 버전을 바꾸려면 이 값만 조정하면 된다)
+   *
+   * 목록에 나열되는 순서와는 별개다. 단독 타이틀이 항상 먼저 오기 때문.
+   */
   displayOrder: number;
   /**
    * 이 버전에 실제로 존재하는 배우는 방법 (TB_GEN_INFO.learnMethods)
@@ -95,6 +107,11 @@ export type VersionsResponse = VersionInfo[];
 /**
  * GET /api/moves/search?q=펀치
  * 기술 국문명 검색 드롭다운용 간략 정보
+ *
+ * 드롭다운이 그리는 것만 담는다. `MoveBrief`와 의도적으로 분리돼 있다 —
+ * 이건 "후보 목록"이고 brief는 "고른 하나의 상세"라, 필요해지는 시점도
+ * 캐시 수명도 다르다. 여기에 brief 필드를 합치면 검색 응답이
+ * 바구니 카드의 표시 항목에 끌려다니게 된다.
  */
 export interface MoveSearchItem {
   id: number;

@@ -8,7 +8,7 @@
  *
  */
 
-import {keepPreviousData, useQuery} from "@tanstack/react-query";
+import {keepPreviousData, useQuery, type QueryClient} from "@tanstack/react-query";
 import type {
   ApiErrorResponse,
   MoveBrief,
@@ -74,11 +74,32 @@ export function useSearchMoves(query: string) {
  */
 export function useMoveBrief(id: number | null) {
   return useQuery<MoveBrief, Error>({
-    queryKey: MOVE_QUERY_KEYS.brief(id ?? 0),
-    queryFn: () => apiFetch<MoveBrief>(`/api/moves/${id}/brief`),
+    ...moveBriefQueryOptions(id ?? 0),
     enabled: id != null && id > 0,
-    staleTime: 1000 * 60 * 10, // 10분 캐시
   });
+}
+
+/**
+ * brief 조회 설정 — 훅과 prefetch가 같은 것을 쓰도록 한 곳에 둔다.
+ * (staleTime이 어긋나면 prefetch해둔 걸 훅이 다시 받아오게 된다)
+ */
+function moveBriefQueryOptions(id: number) {
+  return {
+    queryKey: MOVE_QUERY_KEYS.brief(id),
+    queryFn: () => apiFetch<MoveBrief>(`/api/moves/${id}/brief`),
+    staleTime: 1000 * 60 * 10, // 10분 캐시
+  };
+}
+
+/**
+ * 기술 상세를 미리 받아둔다 (드롭다운에서 후보를 가리켰을 때).
+ *
+ * 이미 신선한 캐시가 있으면 prefetchQuery가 알아서 아무것도 하지 않으므로,
+ * 같은 항목 위를 여러 번 지나가도 요청은 한 번만 나간다.
+ */
+export function prefetchMoveBrief(queryClient: QueryClient, id: number) {
+  if (id <= 0) return;
+  void queryClient.prefetchQuery(moveBriefQueryOptions(id));
 }
 
 /**

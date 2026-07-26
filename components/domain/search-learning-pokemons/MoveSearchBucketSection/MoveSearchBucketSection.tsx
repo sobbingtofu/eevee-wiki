@@ -1,12 +1,34 @@
 "use client";
 
+import {useCallback} from "react";
+import {useQueryClient} from "@tanstack/react-query";
 import SearchInput from "@/components/common-ui/SearchInput/SearchInput";
+import {prefetchMoveBrief} from "@/queries/moveQueries";
+import type {MoveSearchItem} from "@/types/apiTypes";
 import MoveBucket from "./MoveBucket";
 import SearchBtn from "./SearchBtn";
 import {MoveBucketProvider, useMoveBucketContext} from "./context/MoveBucketContext";
 
 function MoveSearchBucketSectionContent() {
   const {addMoveBucketId} = useMoveBucketContext();
+  const queryClient = useQueryClient();
+
+  /**
+   * 후보를 가리키는 순간 상세 정보를 미리 받아둔다.
+   *
+   * 가리킨 뒤 클릭까지는 보통 수백 ms가 뜨므로, 그 사이에 요청이 끝나
+   * 실제로 담을 때는 캐시 적중이 된다.
+   * 검색 응답에 상세를 얹지 않고도 대기가 사라지고,
+   * 요청은 실제로 가리킨 항목에 대해서만 나간다.
+   *
+   * 이미 받아둔 기술이면 prefetchQuery가 staleTime을 보고 알아서 건너뛴다.
+   */
+  const handleFocusMove = useCallback(
+    (item: MoveSearchItem) => {
+      prefetchMoveBrief(queryClient, item.id);
+    },
+    [queryClient],
+  );
 
   return (
     <div
@@ -18,7 +40,7 @@ function MoveSearchBucketSectionContent() {
         <div className="w-full h-[86px]">
           <h3 className="text-xs font-bold mb-4 ml-1">기술 검색</h3>
 
-          <SearchInput handleClickDropdownItem={(item) => addMoveBucketId(item)} />
+          <SearchInput handleClickDropdownItem={addMoveBucketId} handleFocusDropdownItem={handleFocusMove} />
         </div>
         {/* 배우는 포켓몬을 검색할 기술들 담는 양동이 - 높이 100% */}
         <MoveBucket className="mt-10 h-[calc(100%-86px-40px)]" />

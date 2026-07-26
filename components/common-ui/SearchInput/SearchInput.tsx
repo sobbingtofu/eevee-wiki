@@ -11,11 +11,43 @@ import type {MoveSearchItem} from "@/types/apiTypes";
 interface SearchInputProps {
   outSideClickDropdownClose?: boolean; // 드롭다운 외부 클릭 시 드롭다운 닫기 기능 활성화 여부
   handleClickDropdownItem?: (resultItem: MoveSearchItem) => void; // 검색 결과 항목 클릭 시 호출되는 콜백 함수, 필요에 따라 수정
+  /**
+   * 검색 결과 항목을 가리켰을 때(마우스 호버/방향키 이동) 호출. 선택 확정이 아니다.
+   * 호출부가 상세 정보를 미리 받아두는 용도로 쓴다.
+   */
+  handleFocusDropdownItem?: (resultItem: MoveSearchItem) => void;
 }
 
-const ARROW_KEYDOWN_THROTTLE_DELAY = 80;
+/**
+ * 방향키 강조 이동의 최소 간격(ms).
+ *
+ * 키를 누르고 있으면 OS 키 반복이 초당 30회까지 들어온다.
+ * 그대로 받으면 목록이 순식간에 끝까지 흘러가 눈으로 따라갈 수 없다.
+ */
+const ARROW_KEYDOWN_THROTTLE_DELAY = 120;
 
-function SearchInput({outSideClickDropdownClose = true, handleClickDropdownItem = () => {}}: SearchInputProps) {
+/**
+ * 강조 항목이 멎고 나서 "가리켰다"로 볼 때까지의 대기(ms).
+ *
+ * 이동할 때마다 알리면 키를 누르고 있는 동안 지나친 항목 수만큼
+ * 상세 조회가 나간다. 손을 멈춘 항목 하나만 알린다.
+ */
+const ACCENT_FOCUS_SETTLE_DELAY = 150;
+
+/**
+ * 입력이 멎고 나서 실제 검색을 쏘기까지의 대기(ms).
+ *
+ * 체감 지연의 대부분이 여기서 나온다 — 서버 응답 자체는 수십 ms다.
+ * 400ms는 타이핑이 끊긴 느낌이 날 만큼 길어서 줄였다.
+ * 결과는 React Query가 검색어별로 5분간 캐시하므로 재요청 부담도 작다.
+ */
+const SEARCH_DEBOUNCE_DELAY = 250;
+
+function SearchInput({
+  outSideClickDropdownClose = true,
+  handleClickDropdownItem = () => {},
+  handleFocusDropdownItem,
+}: SearchInputProps) {
   const [searchValue, setSearchValue] = useState("");
   const [isDebouncing, setIsDebouncing] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -108,7 +140,7 @@ function SearchInput({outSideClickDropdownClose = true, handleClickDropdownItem 
           setIsDropdownOpen(false);
           setAccentedDropdownItemIndex(-1);
         }
-      }, 400);
+      }, SEARCH_DEBOUNCE_DELAY);
     }
   };
 
@@ -132,6 +164,16 @@ function SearchInput({outSideClickDropdownClose = true, handleClickDropdownItem 
       }
     };
   }, []);
+
+  // 방향키로 항목을 옮길 때도 호버와 동일하게 "가리켰다"로 본다 (키보드 사용자 동등 처리).
+  // 다만 지나가는 항목마다가 아니라, 이동이 멎은 항목 하나만 알린다.
+  useEffect(() => {
+    const accentedItem = searchResults[accentedDropdownItemIndex];
+    if (!accentedItem || !handleFocusDropdownItem) return;
+
+    const timer = setTimeout(() => handleFocusDropdownItem(accentedItem), ACCENT_FOCUS_SETTLE_DELAY);
+    return () => clearTimeout(timer);
+  }, [accentedDropdownItemIndex, searchResults, handleFocusDropdownItem]);
 
   // 드롭다운 외부 클릭 시 드롭다운 닫기 (outSideClickDropdownClose가 true일 때만 활성화)
   useClickOutside(
@@ -181,6 +223,7 @@ function SearchInput({outSideClickDropdownClose = true, handleClickDropdownItem 
             isSearchResultsFetching={isSearchResultFetching}
             searchResults={searchResults}
             onResultItemClick={handleClickDropdownItem}
+            onResultItemFocus={handleFocusDropdownItem}
             accentedItemIndex={accentedDropdownItemIndex}
           />
         )}

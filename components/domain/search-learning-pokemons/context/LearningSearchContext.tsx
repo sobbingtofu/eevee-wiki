@@ -66,11 +66,16 @@ export function LearningSearchProvider({children}: {children: ReactNode}) {
   );
 
   // 버전 목록이 도착하면 기본 버전을 채운다.
-  // API가 displayOrder 내림차순으로 주므로 첫 원소가 곧 기본값이다.
+  //
+  // 배열 첫 원소가 아니라 displayOrder 최댓값을 쓴다.
+  // 목록은 "표시 순서"라 세대에 묶이지 않는 단독 타이틀(포켓몬 챔피언스)이 맨 앞에 오지만,
+  // 초기 선택은 여전히 스칼렛·바이올렛이어야 하기 때문이다.
+  // → 기본 버전을 바꾸려면 TB_GEN_INFO.displayOrder만 조정하면 된다 (코드 수정 불필요).
   // (effect 대신 렌더 중 조정 — React 권장 패턴)
   if (versionName === "" && versions.length > 0) {
-    setVersionNameState(versions[0].versionName);
-    setLearnMethods([...versions[0].learnMethods]);
+    const defaultVersion = versions.reduce((max, v) => (v.displayOrder > max.displayOrder ? v : max));
+    setVersionNameState(defaultVersion.versionName);
+    setLearnMethods([...defaultVersion.learnMethods]);
   }
 
   /**

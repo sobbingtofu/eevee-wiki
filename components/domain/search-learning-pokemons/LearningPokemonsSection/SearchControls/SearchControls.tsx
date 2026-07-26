@@ -42,13 +42,15 @@ function SearchControls({className}: SearchControlsProps) {
 
   const {data: versions = []} = useVersions();
 
-  // 세대는 그룹 헤더 표시용일 뿐, 조회 조건이 아니다
+  // 그룹 헤더는 표시용일 뿐, 조회 조건이 아니다.
+  // groupLabel이 null인 버전(포켓몬 챔피언스)은 어느 세대에도 묶이지 않으므로
+  // group을 비워 헤더 없이 단독 항목으로 그린다. 목록 순서는 서버가 이미 맞춰 보내준다.
   const versionOptions = useMemo(
     () =>
       versions.map((v) => ({
         value: v.versionName,
         label: v.koreanName,
-        group: `${v.genNumber}세대`,
+        group: v.groupLabel ?? undefined,
       })),
     [versions],
   );

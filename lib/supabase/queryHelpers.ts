@@ -22,6 +22,7 @@ interface GenInfoRow {
   versionName: string;
   korName: string;
   genNumber: number;
+  groupLabel: string | null;
   displayOrder: number;
   learnMethods: LearnMethodFilter[];
 }
@@ -45,15 +46,53 @@ interface SimplifiedLearnRow {
 // ──────────────────────────────────────────────
 
 /**
+ * 타입 표 전체의 프로세스 내 캐시.
+ *
+ * TB_TYPES는 18행짜리 사실상 불변 테이블인데도 기술 조회 경로마다
+ * 왕복이 한 번 더 붙고 있었다 (brief·detail·search 모두 "본문 조회 → 타입 조회" 순차 2회).
+ * 한 번 받아두면 그 왕복이 통째로 사라진다.
+ *
+ * in-flight promise를 함께 들고 있어, 동시 요청이 몰려도 조회는 한 번만 나간다.
+ */
+let typeMapCache: Map<number, pokemonTypeKor> | null = null;
+let typeMapInFlight: Promise<Map<number, pokemonTypeKor>> | null = null;
+
+async function loadTypeMap(): Promise<Map<number, pokemonTypeKor>> {
+  if (typeMapCache) return typeMapCache;
+  if (typeMapInFlight) return typeMapInFlight;
+
+  typeMapInFlight = (async () => {
+    const {data, error} = await supabaseServer.from("TB_TYPES").select("id, korName");
+    if (error || !data) {
+      console.error("[queryHelpers] 타입 목록 조회 오류:", error?.message);
+      return new Map<number, pokemonTypeKor>(); // 캐시하지 않음 → 다음 요청에서 재시도
+    }
+    typeMapCache = new Map((data as SimplifiedTypeRow[]).map((t) => [t.id, t.korName]));
+    return typeMapCache;
+  })();
+
+  try {
+    return await typeMapInFlight;
+  } finally {
+    typeMapInFlight = null;
+  }
+}
+
+/**
  * typeId 배열 → Map<typeId, 한국어 타입명>
+ *
+ * 전체 타입 표가 캐시돼 있으므로 대개 네트워크 왕복 없이 반환된다.
  */
 export async function fetchTypeMap(typeIds: number[]): Promise<Map<number, pokemonTypeKor>> {
   if (typeIds.length === 0) return new Map();
 
-  const {data, error} = await supabaseServer.from("TB_TYPES").select("id, korName").in("id", typeIds);
-
-  if (error || !data) return new Map();
-  return new Map((data as SimplifiedTypeRow[]).map((t) => [t.id, t.korName]));
+  const all = await loadTypeMap();
+  const result = new Map<number, pokemonTypeKor>();
+  for (const id of typeIds) {
+    const korName = all.get(id);
+    if (korName != null) result.set(id, korName);
+  }
+  return result;
 }
 
 /**
@@ -97,10 +136,19 @@ const VERSION_CACHE_TTL_MS = 5 * 60 * 1000;
 let versionCache: {value: VersionInfo[]; expiresAt: number} | null = null;
 
 /**
- * 실제 학습 데이터를 가진 버전 목록 (최신 → 과거 순).
+ * 실제 학습 데이터를 가진 버전 목록 (드롭다운 표시 순서 그대로).
  *
  * `displayOrder IS NOT NULL` 인 행이 곧 "UI에 노출할 버전"이라는 것이
  * TB_GEN_INFO의 규약이다. (Phase 1에서 hasData와 완전히 일치하도록 정비됨)
+ *
+ * 정렬은 두 단계다:
+ *   1. groupLabel이 null인 단독 타이틀(포켓몬 챔피언스)이 먼저 — 어느 세대에도 묶이지 않으므로
+ *      세대 그룹 사이에 끼우지 않고 목록 맨 위에 따로 세운다.
+ *   2. 그 안에서 displayOrder 내림차순.
+ *
+ * 정렬을 SQL이 아니라 여기서 하는 이유: PostgREST의 다중 정렬로 이 규칙을 쓰면
+ * groupLabel 문자열의 사전순이 세대 순서를 지배해버린다("10세대" < "9세대").
+ * 22행짜리 목록이라 JS에서 정리하는 편이 정확하고 싸다.
  */
 export async function fetchPlayableVersions(): Promise<VersionInfo[]> {
   if (versionCache && versionCache.expiresAt > Date.now()) {
@@ -109,7 +157,7 @@ export async function fetchPlayableVersions(): Promise<VersionInfo[]> {
 
   const {data, error} = await supabaseServer
     .from("TB_GEN_INFO")
-    .select("versionName, korName, genNumber, displayOrder, learnMethods")
+    .select("versionName, korName, genNumber, groupLabel, displayOrder, learnMethods")
     .not("displayOrder", "is", null)
     .order("displayOrder", {ascending: false});
 
@@ -119,13 +167,16 @@ export async function fetchPlayableVersions(): Promise<VersionInfo[]> {
   }
 
   // DB 컬럼은 korName, API 응답 필드는 koreanName (프론트엔드 계약)
-  const versions: VersionInfo[] = (data as unknown as GenInfoRow[]).map((r) => ({
-    versionName: r.versionName,
-    koreanName: r.korName,
-    genNumber: r.genNumber,
-    displayOrder: r.displayOrder,
-    learnMethods: r.learnMethods,
-  }));
+  const versions: VersionInfo[] = (data as unknown as GenInfoRow[])
+    .map((r) => ({
+      versionName: r.versionName,
+      koreanName: r.korName,
+      genNumber: r.genNumber,
+      groupLabel: r.groupLabel,
+      displayOrder: r.displayOrder,
+      learnMethods: r.learnMethods,
+    }))
+    .sort((a, b) => Number(a.groupLabel != null) - Number(b.groupLabel != null));
   versionCache = {value: versions, expiresAt: Date.now() + VERSION_CACHE_TTL_MS};
   return versions;
 }
