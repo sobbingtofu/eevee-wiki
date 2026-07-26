@@ -7,14 +7,23 @@
 
 import {pokemonTypeKor} from "@/types/pokemonDataType";
 import {supabaseServer} from "./server";
-import type {LearnMethod, MoveLearnEntry} from "@/types/apiTypes";
+import type {LearnMethod, LearnMethodFilter, MoveLearnEntry, VersionInfo} from "@/types/apiTypes";
 
 // ──────────────────────────────────────────────
 // 타입 내부 DB 로우 형태
 // ──────────────────────────────────────────────
 interface SimplifiedTypeRow {
   id: number;
-  koreanName: pokemonTypeKor;
+  korName: pokemonTypeKor;
+}
+
+/** TB_GEN_INFO 로우 (DB는 korName, API 응답은 koreanName으로 내보낸다) */
+interface GenInfoRow {
+  versionName: string;
+  korName: string;
+  genNumber: number;
+  displayOrder: number;
+  learnMethods: LearnMethodFilter[];
 }
 
 interface SimplifiedPokemonTypeRow {
@@ -41,10 +50,10 @@ interface SimplifiedLearnRow {
 export async function fetchTypeMap(typeIds: number[]): Promise<Map<number, pokemonTypeKor>> {
   if (typeIds.length === 0) return new Map();
 
-  const {data, error} = await supabaseServer.from("TB_TYPES").select("id, koreanName").in("id", typeIds);
+  const {data, error} = await supabaseServer.from("TB_TYPES").select("id, korName").in("id", typeIds);
 
   if (error || !data) return new Map();
-  return new Map((data as SimplifiedTypeRow[]).map((t) => [t.id, t.koreanName]));
+  return new Map((data as SimplifiedTypeRow[]).map((t) => [t.id, t.korName]));
 }
 
 /**
@@ -74,31 +83,93 @@ export async function fetchPokemonTypesMap(pokemonIds: number[]): Promise<Map<nu
   return result;
 }
 
-/**
- * genNumber → 해당 세대의 versionName 배열
- */
-export async function fetchGenVersionNames(genNumber: number): Promise<string[]> {
-  const {data, error} = await supabaseServer.from("TB_GEN_INFO").select("versionName").eq("genNumber", genNumber);
+// ──────────────────────────────────────────────
+// 버전 목록
+// ──────────────────────────────────────────────
 
-  if (error || !data) return [];
-  return (data as {versionName: string}[]).map((r) => r.versionName);
+/**
+ * 노출 대상 버전 목록의 프로세스 내 캐시.
+ *
+ * TB_GEN_INFO는 PokeAPI 동기화(scripts/sync-pokeapi.mjs) 때만 바뀌므로
+ * 매 요청 조회할 이유가 없다. 동기화 후에는 TTL이 지나며 자연히 반영된다.
+ */
+const VERSION_CACHE_TTL_MS = 5 * 60 * 1000;
+let versionCache: {value: VersionInfo[]; expiresAt: number} | null = null;
+
+/**
+ * 실제 학습 데이터를 가진 버전 목록 (최신 → 과거 순).
+ *
+ * `displayOrder IS NOT NULL` 인 행이 곧 "UI에 노출할 버전"이라는 것이
+ * TB_GEN_INFO의 규약이다. (Phase 1에서 hasData와 완전히 일치하도록 정비됨)
+ */
+export async function fetchPlayableVersions(): Promise<VersionInfo[]> {
+  if (versionCache && versionCache.expiresAt > Date.now()) {
+    return versionCache.value;
+  }
+
+  const {data, error} = await supabaseServer
+    .from("TB_GEN_INFO")
+    .select("versionName, korName, genNumber, displayOrder, learnMethods")
+    .not("displayOrder", "is", null)
+    .order("displayOrder", {ascending: false});
+
+  if (error || !data) {
+    console.error("[queryHelpers] 버전 목록 조회 오류:", error?.message);
+    return [];
+  }
+
+  // DB 컬럼은 korName, API 응답 필드는 koreanName (프론트엔드 계약)
+  const versions: VersionInfo[] = (data as unknown as GenInfoRow[]).map((r) => ({
+    versionName: r.versionName,
+    koreanName: r.korName,
+    genNumber: r.genNumber,
+    displayOrder: r.displayOrder,
+    learnMethods: r.learnMethods,
+  }));
+  versionCache = {value: versions, expiresAt: Date.now() + VERSION_CACHE_TTL_MS};
+  return versions;
 }
 
 /**
- * (pokemonIds × moveIds × versionNames) 에 해당하는
+ * 조회에 사용할 수 있는 버전명인지 검사.
+ *
+ * 존재하지 않는 버전명은 에러 없이 빈 결과가 되어버리므로
+ * (실제로 BDSP 버전명이 바뀌었을 때 이 방식으로 조용히 0건이 됐다)
+ * 라우트 진입 시점에 400으로 걸러낸다.
+ */
+export async function isPlayableVersion(versionName: string): Promise<boolean> {
+  const versions = await fetchPlayableVersions();
+  return versions.some((v) => v.versionName === versionName);
+}
+
+/**
+ * 해당 버전에서 실제로 쓸 수 있는 "배우는 방법" 목록.
+ * 존재하지 않는 버전이면 빈 배열.
+ */
+export async function fetchVersionLearnMethods(versionName: string): Promise<LearnMethodFilter[]> {
+  const versions = await fetchPlayableVersions();
+  return versions.find((v) => v.versionName === versionName)?.learnMethods ?? [];
+}
+
+// ──────────────────────────────────────────────
+// 학습 정보
+// ──────────────────────────────────────────────
+
+/**
+ * (pokemonIds × moveIds × 단일 versionName) 에 해당하는
  * TB_CXN_POKEMON_MOVES 행을 조회하여
  * Map<pokemonId, Map<moveId, MoveLearnEntry[]>> 형태로 반환.
  *
- * - 동일 (learnMethod, levelLearnedAt) 조합이 여러 버전에 걸쳐 중복되는 경우 dedup.
- * - 중복 판단 기준: learnMethod + levelLearnedAt 조합의 동일성.
- *   버전명은 가장 먼저 발견된 값을 사용.
+ * TB_CXN_POKEMON_MOVES의 PK가 (pokemonId, moveId, versionName, learnMethod)이므로
+ * 단일 버전 안에서는 learnMethod가 유일하다 → dedup 불필요.
+ * (세대 단위로 여러 버전을 합치던 시절에만 필요했던 로직)
  */
 export async function fetchLearnInfoMap(
   pokemonIds: number[],
   moveIds: number[],
-  versionNames: string[],
+  versionName: string,
 ): Promise<Map<number, Map<number, MoveLearnEntry[]>>> {
-  if (pokemonIds.length === 0 || moveIds.length === 0 || versionNames.length === 0) {
+  if (pokemonIds.length === 0 || moveIds.length === 0 || !versionName) {
     return new Map();
   }
 
@@ -107,11 +178,10 @@ export async function fetchLearnInfoMap(
     .select("pokemonId, moveId, learnMethod, levelLearnedAt, versionName")
     .in("pokemonId", pokemonIds)
     .in("moveId", moveIds)
-    .in("versionName", versionNames);
+    .eq("versionName", versionName);
 
   if (error || !data) return new Map();
 
-  // Map<pokemonId, Map<moveId, Set<"learnMethod|level"> → MoveLearnEntry>>
   const result = new Map<number, Map<number, MoveLearnEntry[]>>();
 
   for (const row of data as SimplifiedLearnRow[]) {
@@ -123,18 +193,11 @@ export async function fetchLearnInfoMap(
     if (!moveMap.has(row.moveId)) {
       moveMap.set(row.moveId, []);
     }
-    const entries = moveMap.get(row.moveId)!;
-
-    // learnMethod + levelLearnedAt 조합으로 dedup
-    const key = `${row.learnMethod}|${row.levelLearnedAt}`;
-    const alreadyExists = entries.some((e) => `${e.learnMethod}|${e.levelLearnedAt}` === key);
-    if (!alreadyExists) {
-      entries.push({
-        learnMethod: row.learnMethod as LearnMethod,
-        levelLearnedAt: row.levelLearnedAt,
-        versionName: row.versionName,
-      });
-    }
+    moveMap.get(row.moveId)!.push({
+      learnMethod: row.learnMethod as LearnMethod,
+      levelLearnedAt: row.levelLearnedAt,
+      versionName: row.versionName,
+    });
   }
 
   return result;

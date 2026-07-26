@@ -117,8 +117,8 @@ npm run sync:pokeapi
    → brilliant-diamond-shining-pearl   24,324행 이관
 
 ➕ 신규 기술 (TB_MOVES 추가됨)
-   #921  (koreanName 없음 → 수동 보완 필요)
-   #922  (koreanName 없음 → 수동 보완 필요)
+   #921  (korName 없음 → 수동 보완 필요)
+   #922  (korName 없음 → 수동 보완 필요)
 
 ✏️  변경된 학습 정보
    가디안(282) × 사이코키네시스 × champions
@@ -135,7 +135,7 @@ npm run sync:pokeapi
 
 | 리포트 항목 | 대응 |
 |------------|------|
-| ➕ 신규 버전 | `TB_GEN_INFO`에 `koreanName`·`displayOrder` 부여 → §5 참조 |
+| ➕ 신규 버전 | `TB_GEN_INFO`에 `korName`·`displayOrder` 부여 → §5 참조 |
 | ♻️ 버전명 변경 | `TB_GEN_INFO`의 `versionName` 수정 필요 |
 | ➕ 신규 기술 | **한국어명·설명이 비어 있음.** 별도 보완 작업 필요 |
 | ✏️ 변경된 학습 정보 | 자동 반영됨. 확인만 |
@@ -150,7 +150,7 @@ npm run sync:pokeapi
 
 ```sql
 UPDATE "TB_GEN_INFO"
-SET "koreanName"   = 'Pokémon LEGENDS Z-A',
+SET "korName"      = 'Pokémon LEGENDS Z-A',
     "displayOrder" = 23,
     "hasData"      = true
 WHERE "versionName" = 'legends-za';
@@ -165,8 +165,11 @@ WHERE "versionName" = 'legends-za';
 Champions 패치로 신규 기술이 추가되면 스크립트가 `TB_MOVES`에 행을 자동 삽입한다.
 이때 PokeAPI가 한국어를 제공하지 않으면 `korName`·`korDescription`이 비어 있다.
 
-> `TB_MOVES`의 한국어 컬럼명은 `korName` / `korDescription`이다.
-> (`TB_ABILITIES`와 달리 `altKorName` 계열 폴백 컬럼이 없다.)
+> 한국어명 컬럼은 **모든 테이블에서 `korName`**으로 통일되어 있다 (2026-07-26).
+> `TB_MOVES`는 `korName` / `korDescription`을 쓰며,
+> `TB_ABILITIES`와 달리 `altKorName` 계열 폴백 컬럼이 없다.
+>
+> API 응답 필드명은 `koreanName`으로 유지되므로 혼동하지 말 것 — 조회부에서 매핑한다.
 
 ### 보완 절차
 
@@ -201,11 +204,11 @@ Champions 패치로 신규 기술이 추가되면 스크립트가 `TB_MOVES`에 
 
 ```sql
 -- ① 버전별 행 수 (급감한 버전이 없는지)
-SELECT g."displayOrder", g."koreanName", COUNT(m.*) AS rows
+SELECT g."displayOrder", g."korName", COUNT(m.*) AS rows
 FROM "TB_GEN_INFO" g
 LEFT JOIN "TB_CXN_POKEMON_MOVES" m ON m."versionName" = g."versionName"
 WHERE g."hasData" = true
-GROUP BY g."displayOrder", g."koreanName"
+GROUP BY g."displayOrder", g."korName"
 ORDER BY g."displayOrder";
 
 -- ② FK 무결성 (0이어야 정상)

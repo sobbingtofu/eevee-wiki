@@ -1,7 +1,7 @@
 /**
  * GET /api/pokemons/search?q={검색어}
  *
- * koreanName에 검색어를 포함하는 포켓몬 목록 반환 (드롭다운용)
+ * korName에 검색어를 포함하는 포켓몬 목록 반환 (드롭다운용)
  *
  * @param q - 국문 포켓몬명 검색어 (예: "이상해")
  * @returns PokemonSearchResponse - { pokemonId, koreanName, korTypes, spriteUrl }[] (최대 20건)
@@ -13,7 +13,7 @@ import type { PokemonSearchResponse, ApiErrorResponse } from "@/types/apiTypes";
 
 interface PokemonRow {
   pokemonId: number;
-  koreanName: string | null;
+  korName: string | null;
   spriteUrl: string | null;
 }
 
@@ -24,12 +24,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json<PokemonSearchResponse>([]);
   }
 
-  // ── Step 1: koreanName에 검색어 포함하는 포켓몬 조회 ──────────
+  // ── Step 1: korName에 검색어 포함하는 포켓몬 조회 ──────────
   const { data: pokemons, error: pokErr } = await supabaseServer
     .from("TB_POKEMONS")
-    .select("pokemonId, koreanName, spriteUrl")
-    .not("koreanName", "is", null)
-    .ilike("koreanName", `%${q}%`)
+    .select("pokemonId, korName, spriteUrl")
+    .not("korName", "is", null)
+    .ilike("korName", `%${q}%`)
     .order("pokemonId")
     .limit(20);
 
@@ -51,10 +51,10 @@ export async function GET(request: NextRequest) {
 
   // ── 응답 조립 ────────────────────────────────────────────────
   const result: PokemonSearchResponse = (pokemons as PokemonRow[])
-    .filter((p): p is PokemonRow & { koreanName: string } => p.koreanName != null)
+    .filter((p): p is PokemonRow & { korName: string } => p.korName != null)
     .map((p) => ({
       pokemonId: p.pokemonId,
-      koreanName: p.koreanName,
+      koreanName: p.korName,
       korTypes: typesMap.get(p.pokemonId) ?? [],
       spriteUrl: p.spriteUrl,
     }));

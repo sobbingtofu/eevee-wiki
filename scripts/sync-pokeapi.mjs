@@ -75,6 +75,21 @@ const KNOWN_EXCLUDED = [
 const TARGET_SET = new Set(TARGET_VERSIONS);
 const EXCLUDED_SET = new Set(KNOWN_EXCLUDED);
 
+/** types/apiTypes.ts의 LearnMethod와 일치. 새 값이 나타나면 경고한다. */
+const KNOWN_LEARN_METHODS = new Set([
+  "level-up",
+  "machine",
+  "egg",
+  "tutor",
+  "train",
+  "light-ball-egg",
+  "form-change",
+  "stadium-surfing-pikachu",
+]);
+
+/** types/apiTypes.ts의 LearnMethodFilter와 일치 (UI 필터에 노출하는 것) */
+const FILTERABLE_LEARN_METHODS = new Set(["level-up", "machine", "tutor", "train"]);
+
 // ── CLI ───────────────────────────────────────────────────────────
 const argv = process.argv.slice(2);
 const hasFlag = (name) => argv.includes(name);
@@ -454,12 +469,34 @@ async function main() {
   }
   process.stdout.write("\n");
 
-  // hasData 재계산 — 실제로 행이 들어간 버전만 true
-  console.log("   TB_GEN_INFO.hasData 재계산");
+  // hasData / learnMethods 재계산 — TB_GEN_INFO를 실제 데이터와 다시 맞춘다
+  console.log("   TB_GEN_INFO.hasData / learnMethods 재계산");
+
+  // 버전별로 실제 존재하는 "배우는 방법"(UI 필터 대상 4종)을 집계.
+  // 버전마다 다르다 — champions는 train만, 레전드 아르세우스는 기술머신이 없다.
+  const methodsByVersion = new Map();
+  for (const r of finalRows) {
+    if (!FILTERABLE_LEARN_METHODS.has(r.learnMethod)) continue;
+    if (!methodsByVersion.has(r.versionName)) methodsByVersion.set(r.versionName, new Set());
+    methodsByVersion.get(r.versionName).add(r.learnMethod);
+  }
+
   for (const v of knownVersions) {
     const hasData = (finalByVersion.get(v) ?? 0) > 0;
-    const {error} = await supabase.from("TB_GEN_INFO").update({hasData}).eq("versionName", v);
-    if (error) throw new Error(`hasData 갱신 실패(${v}): ${error.message}`);
+    const learnMethods = [...(methodsByVersion.get(v) ?? [])].sort();
+    const {error} = await supabase.from("TB_GEN_INFO").update({hasData, learnMethods}).eq("versionName", v);
+    if (error) throw new Error(`TB_GEN_INFO 갱신 실패(${v}): ${error.message}`);
+  }
+
+  // 타입에 없는 학습 방법이 새로 등장하면 UI에서 한국어 라벨이 비게 된다.
+  // (champions의 "train"이 실제로 이렇게 유입됐다)
+  const unknownMethods = [...new Set(finalRows.map((r) => r.learnMethod))].filter(
+    (m) => !KNOWN_LEARN_METHODS.has(m),
+  );
+  if (unknownMethods.length > 0) {
+    console.log(`\n   ⚠️  타입에 정의되지 않은 학습 방법: ${unknownMethods.join(", ")}`);
+    console.log("      → types/apiTypes.ts의 LearnMethod / LEARN_METHOD_KOR에 추가하세요.");
+    console.log("      → 한국어명은 직역하지 말고 공식 표기를 확인할 것.");
   }
 
   console.log(`\n✅ 완료 — ${oldRows.length.toLocaleString()}행 → ${finalRows.length.toLocaleString()}행`);

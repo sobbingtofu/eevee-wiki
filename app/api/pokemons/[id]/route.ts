@@ -7,7 +7,7 @@
  *
  * @param id - pokemonId (경로 파라미터)
  * @returns PokemonDetail
- *          - pokemonId, koreanName, officialArtworkUrl, spriteUrl,
+ *          - pokemonId, korName, officialArtworkUrl, spriteUrl,
  *            korTypes, stats, evStats, abilities[]
  */
 import {NextRequest, NextResponse} from "next/server";
@@ -18,7 +18,7 @@ import type {PokemonDetail, PokemonAbilityInfo, StatEntry, EvStatEntry, ApiError
 interface TB_POKEMONS_USED_COLUMNS {
   pokemonId: number;
   speciesId: number | null;
-  koreanName: string | null;
+  korName: string | null;
   officialArtworkUrl: string | null;
   spriteUrl: string | null;
   stats: StatEntry[] | null;
@@ -32,7 +32,7 @@ interface TB_CXN_POKEMON_ABILITIES_USED_COLUMNS {
 
 interface TB_ABILITIES_USED_COLUMNS {
   id: number;
-  koreanName: string | null;
+  korName: string | null;
   altKorName: string | null;
   korDescription: string | null;
   altKorDescription: string | null;
@@ -49,7 +49,7 @@ export async function GET(_request: NextRequest, {params}: {params: Promise<{id:
   // Step 1: 포켓몬 기본 정보 조회
   const {data: pokemon, error: pokErr} = await supabaseServer
     .from("TB_POKEMONS")
-    .select("pokemonId, speciesId, koreanName, officialArtworkUrl, spriteUrl, stats, evStats")
+    .select("pokemonId, speciesId, korName, officialArtworkUrl, spriteUrl, stats, evStats")
     .eq("pokemonId", pokemonId)
     .maybeSingle();
 
@@ -91,7 +91,7 @@ export async function GET(_request: NextRequest, {params}: {params: Promise<{id:
 
     const {data: abilityDetails, error: abilErr} = await supabaseServer
       .from("TB_ABILITIES")
-      .select("id, koreanName, altKorName, korDescription, altKorDescription")
+      .select("id, korName, altKorName, korDescription, altKorDescription")
       .in("id", abilityIds);
 
     if (abilErr) {
@@ -110,12 +110,12 @@ export async function GET(_request: NextRequest, {params}: {params: Promise<{id:
         const detail = abilityDetailMap.get(link.abilityId);
         if (!detail) return null;
 
-        const displayName = detail.koreanName ?? detail.altKorName ?? `ability_${detail.id}`;
+        const displayName = detail.korName ?? detail.altKorName ?? `ability_${detail.id}`;
         const displayDescription = detail.korDescription ?? detail.altKorDescription ?? null;
 
         return {
           abilityId: detail.id,
-          koreanName: detail.koreanName,
+          koreanName: detail.korName,
           altKorName: detail.altKorName,
           displayName,
           korDescription: detail.korDescription,
@@ -131,7 +131,7 @@ export async function GET(_request: NextRequest, {params}: {params: Promise<{id:
   const result: PokemonDetail = {
     pokemonId: p.pokemonId,
     speciesId: p.speciesId,
-    koreanName: p.koreanName ?? p.pokemonId.toString(),
+    koreanName: p.korName ?? p.pokemonId.toString(),
     officialArtworkUrl: p.officialArtworkUrl,
     spriteUrl: p.spriteUrl,
     korTypes,

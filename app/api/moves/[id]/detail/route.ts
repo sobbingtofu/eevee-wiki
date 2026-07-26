@@ -11,6 +11,7 @@ import {NextRequest, NextResponse} from "next/server";
 import {supabaseServer} from "@/lib/supabase/server";
 import {fetchTypeMap} from "@/lib/supabase/queryHelpers";
 import type {MoveDetail, ApiErrorResponse, DamageClass} from "@/types/apiTypes";
+import type {pokemonTypeKor} from "@/types/pokemonDataType";
 
 interface TB_MOVE_USED_COLUMNS {
   id: number;
@@ -52,7 +53,7 @@ export async function GET(_request: NextRequest, {params}: {params: Promise<{id:
   const m = move as TB_MOVE_USED_COLUMNS;
 
   // Step 2: typeId → 한국어 타입명 조회
-  const typeMap = m.typeId != null ? await fetchTypeMap([m.typeId]) : new Map<number, string>();
+  const typeMap = m.typeId != null ? await fetchTypeMap([m.typeId]) : new Map<number, pokemonTypeKor>();
 
   // Step 3: 응답 데이터 구성
   const result: MoveDetail = {
@@ -62,6 +63,8 @@ export async function GET(_request: NextRequest, {params}: {params: Promise<{id:
     power: m.power,
     accuracy: m.accuracy,
     damageClass: m.damageClass ?? "status",
+    // MoveDetail은 MoveBrief를 확장하므로 brief의 description도 함께 채운다
+    description: m.korDescription ?? "",
     korDescription: m.korDescription,
     pp: m.pp,
     effectChance: m.effectChance,

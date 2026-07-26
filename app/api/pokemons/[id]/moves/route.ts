@@ -1,18 +1,18 @@
 /**
- * GET /api/pokemons/[id]/moves?gen={세대번호}
+ * GET /api/pokemons/[id]/moves?version={버전명}
  *
- * - 특정 포켓몬이 특정 세대에서 배울 수 있는 기술 목록 반환
- * - 포켓몬 상세 페이지 - 세대별 기술 목록
+ * - 특정 포켓몬이 특정 게임 버전에서 배울 수 있는 기술 목록 반환
+ * - 포켓몬 상세 페이지 - 버전별 기술 목록
  *
- * @param id  - pokemonId (경로 파라미터)
- * @param gen - 세대 번호 1~9 (쿼리 파라미터)
+ * @param id      - pokemonId (경로 파라미터)
+ * @param version - TB_GEN_INFO.versionName (쿼리 파라미터, 예: "sword-shield")
  * @returns PokemonMovesResponse
  *          - { moveId, koreanName, korType, power, accuracy, pp,
  *              damageClass, korDescription, learnMethods[] }[]
  */
 import {NextRequest, NextResponse} from "next/server";
 import {supabaseServer} from "@/lib/supabase/server";
-import {fetchGenVersionNames, fetchTypeMap} from "@/lib/supabase/queryHelpers";
+import {isPlayableVersion, fetchTypeMap} from "@/lib/supabase/queryHelpers";
 import type {
   PokemonMovesResponse,
   PokemonMoveItem,
@@ -31,7 +31,7 @@ interface LearnRow {
 
 interface MoveDetailRow {
   id: number;
-  koreanName: string | null;
+  korName: string | null;
   typeId: number | null;
   power: number | null;
   accuracy: number | null;
@@ -43,27 +43,27 @@ interface MoveDetailRow {
 export async function GET(request: NextRequest, {params}: {params: Promise<{id: string}>}) {
   const {id: rawId} = await params;
   const pokemonId = Number(rawId);
-  const gen = Number(new URL(request.url).searchParams.get("gen") ?? "0");
+  const version = new URL(request.url).searchParams.get("version") ?? "";
 
   if (!Number.isInteger(pokemonId) || pokemonId <= 0) {
     return NextResponse.json<ApiErrorResponse>({error: "유효하지 않은 포켓몬 ID입니다."}, {status: 400});
   }
-  if (!Number.isInteger(gen) || gen < 1 || gen > 9) {
-    return NextResponse.json<ApiErrorResponse>({error: "gen 파라미터는 1~9 사이의 정수여야 합니다."}, {status: 400});
+
+  // Step 1: 버전명 검증
+  // 존재하지 않는 버전명은 조용히 0건이 되어버리므로 여기서 400으로 걸러낸다
+  if (!(await isPlayableVersion(version))) {
+    return NextResponse.json<ApiErrorResponse>(
+      {error: `지원하지 않는 버전입니다: ${version || "(누락)"}`},
+      {status: 400},
+    );
   }
 
-  // Step 1: 해당 세대의 버전명 목록
-  const versionNames = await fetchGenVersionNames(gen);
-  if (versionNames.length === 0) {
-    return NextResponse.json<PokemonMovesResponse>([]);
-  }
-
-  // Step 2: 해당 포켓몬이 해당 세대에서 배우는 기술 학습 데이터 조회
+  // Step 2: 해당 포켓몬이 해당 버전에서 배우는 기술 학습 데이터 조회
   const {data: learnData, error: learnErr} = await supabaseServer
     .from("TB_CXN_POKEMON_MOVES")
     .select("moveId, learnMethod, levelLearnedAt, versionName")
     .eq("pokemonId", pokemonId)
-    .in("versionName", versionNames);
+    .eq("versionName", version);
 
   if (learnErr) {
     console.error("[pokemons/moves] 학습 데이터 조회 오류:", learnErr.message);
@@ -74,19 +74,16 @@ export async function GET(request: NextRequest, {params}: {params: Promise<{id: 
     return NextResponse.json<PokemonMovesResponse>([]);
   }
 
-  // Step 3: moveId별 학습방법 그룹화 (learnMethod+level 기준 dedup)
+  // Step 3: moveId별 학습방법 그룹화
+  // PK가 (pokemonId, moveId, versionName, learnMethod)이므로 단일 버전 내에서는 중복이 없다
   const learnMap = new Map<number, PokemonMoveLearnEntry[]>();
   for (const row of learnData as LearnRow[]) {
     const existing = learnMap.get(row.moveId) ?? [];
-    const key = `${row.learnMethod}|${row.levelLearnedAt}`;
-    const isDup = existing.some((e) => `${e.learnMethod}|${e.levelLearnedAt}` === key);
-    if (!isDup) {
-      existing.push({
-        learnMethod: row.learnMethod as LearnMethod,
-        levelLearnedAt: row.levelLearnedAt,
-        versionName: row.versionName,
-      });
-    }
+    existing.push({
+      learnMethod: row.learnMethod as LearnMethod,
+      levelLearnedAt: row.levelLearnedAt,
+      versionName: row.versionName,
+    });
     learnMap.set(row.moveId, existing);
   }
 
@@ -95,7 +92,7 @@ export async function GET(request: NextRequest, {params}: {params: Promise<{id: 
   // Step 4: 기술 상세 정보 조회
   const {data: moveDetails, error: moveErr} = await supabaseServer
     .from("TB_MOVES")
-    .select("id, koreanName, typeId, power, accuracy, pp, damageClass, korDescription")
+    .select("id, korName, typeId, power, accuracy, pp, damageClass, korDescription")
     .in("id", moveIds);
 
   if (moveErr) {
@@ -119,7 +116,7 @@ export async function GET(request: NextRequest, {params}: {params: Promise<{id: 
 
       return {
         moveId: m.id,
-        koreanName: m.koreanName ?? m.id.toString(),
+        koreanName: m.korName ?? m.id.toString(),
         korType: m.typeId != null ? (typeMap.get(m.typeId) ?? "???") : "???",
         power: m.power,
         accuracy: m.accuracy,

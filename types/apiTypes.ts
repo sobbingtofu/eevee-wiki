@@ -20,6 +20,7 @@ export type LearnMethod =
   | "machine"
   | "egg"
   | "tutor"
+  | "train"
   | "light-ball-egg"
   | "form-change"
   | "stadium-surfing-pikachu";
@@ -30,6 +31,8 @@ export const LEARN_METHOD_KOR: Record<LearnMethod, string> = {
   machine: "기술머신",
   egg: "교배",
   tutor: "기술가르침",
+  /** 포켓몬 챔피언스의 트레이닝 메뉴에서 습득 (champions 전용) */
+  train: "트레이닝",
   "light-ball-egg": "교배(라이트볼)",
   "form-change": "폼체인지",
   "stadium-surfing-pikachu": "스타디움",
@@ -50,6 +53,40 @@ export interface EvStatEntry {
 export type DamageClass = "physical" | "special" | "status";
 
 export type DamageClassKor = "물리" | "특수" | "변화";
+
+// ─────────────────────────────────────────
+// 게임 버전(Version) 관련 타입
+// ─────────────────────────────────────────
+
+/**
+ * GET /api/versions 응답 항목 — TB_GEN_INFO 중 실제 학습 데이터를 가진 버전
+ *
+ * 기술 학습 정보는 세대가 아니라 **버전 단위**로 조회한다.
+ * 같은 8세대라도 소드·실드(75) / BDSP(53) / 레전드 아르세우스(10)처럼
+ * 배우는 기술 폭이 크게 다르기 때문에, 세대로 묶으면 합집합이 되어 실제와 어긋난다.
+ *
+ * genNumber는 드롭다운 그룹 헤더 표기용이며 조회 조건으로 쓰지 않는다.
+ */
+export interface VersionInfo {
+  /** TB_GEN_INFO.versionName — 조회 시 실제로 쓰는 식별자 */
+  versionName: string;
+  koreanName: string;
+  /** 소속 세대 (UI 그룹 헤더 표기용) */
+  genNumber: number;
+  /** 출시 순 1~22 */
+  displayOrder: number;
+  /**
+   * 이 버전에 실제로 존재하는 배우는 방법 (TB_GEN_INFO.learnMethods)
+   *
+   * 버전마다 다르다 — champions는 "train"만, 레전드 아르세우스는 기술머신이 없고,
+   * 레드·블루 등 초기 버전은 기술가르침이 없다.
+   * UI의 "배우는 방법" 필터는 이 목록으로 옵션을 좁혀야 한다.
+   * (그러지 않으면 반드시 0건이 나오는 조합을 사용자가 고를 수 있다)
+   */
+  learnMethods: LearnMethodFilter[];
+}
+
+export type VersionsResponse = VersionInfo[];
 
 // ─────────────────────────────────────────
 // 기술(Move) 관련 타입
@@ -93,8 +130,8 @@ export interface MoveDetail extends MoveBrief {
 }
 
 /**
- * GET /api/moves/[id]/learning-pokemons?gen=9
- * 기술 상세 페이지 하단: 특정 세대에서 해당 기술을 배우는 포켓몬 목록
+ * GET /api/moves/[id]/learning-pokemons?version=scarlet-violet
+ * 기술 상세 페이지 하단: 특정 버전에서 해당 기술을 배우는 포켓몬 목록
  */
 export interface MoveLearningPokemonItem {
   pokemonId: number;
@@ -156,7 +193,7 @@ export interface PokemonAbilityInfo {
  * GET /api/pokemons/[id]
  * 포켓몬 상세 페이지 기본 정보 (이름, 이미지, 스탯, 타입, 특성)
  * 진화 체인은 GET /api/pokemons/[id]/evol 로 분리
- * 기술 목록은 GET /api/pokemons/[id]/moves?gen=9 로 분리
+ * 기술 목록은 GET /api/pokemons/[id]/moves?version=scarlet-violet 로 분리
  */
 export interface PokemonDetail {
   pokemonId: number;
@@ -171,8 +208,8 @@ export interface PokemonDetail {
 }
 
 /**
- * GET /api/pokemons/[id]/moves?gen=9
- * 포켓몬 상세 페이지 하단: 특정 세대에서 해당 포켓몬이 배우는 기술 목록
+ * GET /api/pokemons/[id]/moves?version=scarlet-violet
+ * 포켓몬 상세 페이지 하단: 특정 버전에서 해당 포켓몬이 배우는 기술 목록
  */
 export interface PokemonMoveItem {
   moveId: number;
@@ -222,10 +259,13 @@ export type PokemonSortKey =
 export type SortDirection = "asc" | "desc";
 
 /**
- * 배우는 방법 필터 옵션 (LearnMethod 중 UI에 노출하는 3종)
+ * 배우는 방법 필터 옵션 (LearnMethod 중 UI에 노출하는 4종)
  * - 멀티셀렉트, OR 방식(선택된 방법 중 하나라도로 배우면 자격)
+ *
+ * 4종 전부가 항상 유효한 것은 아니다. 실제 선택 가능한 목록은
+ * 선택된 버전의 `VersionInfo.learnMethods`로 좁혀야 한다.
  */
-export type LearnMethodFilter = Extract<LearnMethod, "level-up" | "machine" | "tutor">;
+export type LearnMethodFilter = Extract<LearnMethod, "level-up" | "machine" | "tutor" | "train">;
 
 /** PokemonSortKey 전체 목록 (런타임 유효성 검사 / UI 렌더링용) */
 export const POKEMON_SORT_KEYS: readonly PokemonSortKey[] = [
@@ -246,8 +286,17 @@ export const POKEMON_SORT_KEYS: readonly PokemonSortKey[] = [
 /** SortDirection 전체 목록 */
 export const SORT_DIRECTIONS: readonly SortDirection[] = ["asc", "desc"] as const;
 
-/** LearnMethodFilter 전체 목록 */
-export const LEARN_METHOD_FILTERS: readonly LearnMethodFilter[] = ["level-up", "machine", "tutor"] as const;
+/**
+ * LearnMethodFilter 전체 목록 (표시 순서 기준)
+ *
+ * 실제 UI에 띄울 옵션은 선택된 버전의 `VersionInfo.learnMethods`와 교집합을 취한다.
+ */
+export const LEARN_METHOD_FILTERS: readonly LearnMethodFilter[] = [
+  "level-up",
+  "machine",
+  "tutor",
+  "train",
+] as const;
 
 /** PokemonSortKey → 국문 라벨 (정렬 기준 드롭다운 표기) */
 export const POKEMON_SORT_KEY_LABEL: Record<PokemonSortKey, string> = {
@@ -296,8 +345,8 @@ export const SORT_KEY_STAT_FIELDS: Record<Exclude<PokemonSortKey, "name">, StatE
 export interface SearchLearningPokemonsRequest {
   /** 기술 바구니에 담긴 기술 id 배열 (1개 이상) */
   moveIds: number[];
-  /** 검색 대상 세대 번호 (1~9, 단일 선택) */
-  genNumber: number;
+  /** 검색 대상 게임 버전 (단일 선택, TB_GEN_INFO.versionName) */
+  versionName: string;
   /** 정렬 기준 */
   sortKey: PokemonSortKey;
   /** 정렬 방향 */
@@ -308,7 +357,7 @@ export interface SearchLearningPokemonsRequest {
 
 /**
  * POST /api/search-learning-pokemons 응답 — 개별 포켓몬 항목
- * moveLearnInfo: { [moveId]: 해당 세대에서의 학습 방법 목록 }
+ * moveLearnInfo: { [moveId]: 해당 버전에서의 학습 방법 목록 }
  */
 export interface LearningPokemonItem {
   pokemonId: number;
@@ -317,7 +366,7 @@ export interface LearningPokemonItem {
   korTypes: string[];
   stats: StatEntry[];
   evStats: EvStatEntry[];
-  /** key: moveId(number를 string으로 직렬화), value: 해당 세대에서의 학습방법 목록 */
+  /** key: moveId(number를 string으로 직렬화), value: 해당 버전에서의 학습방법 목록 */
   moveLearnInfo: Record<string, MoveLearnEntry[]>;
 }
 
