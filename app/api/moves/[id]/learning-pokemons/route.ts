@@ -19,6 +19,7 @@ import type {
   LearnMethod,
   ApiErrorResponse,
 } from "@/types/apiTypes";
+import {API_CACHE_CONTROL, cacheHeaders} from "@/lib/apiCache";
 
 interface TB_POKEMONS_USED_COLUMNS {
   pokemonId: number;
@@ -64,7 +65,7 @@ export async function GET(request: NextRequest, {params}: {params: Promise<{id: 
   }
 
   if (!learnData || learnData.length === 0) {
-    return NextResponse.json<MoveLearningPokemonsResponse>([]);
+    return NextResponse.json<MoveLearningPokemonsResponse>([], cacheHeaders(API_CACHE_CONTROL.VERSION_SCOPED_LIST));
   }
 
   // Step 3: pokemonId별 학습 방법 그룹화
@@ -110,5 +111,5 @@ export async function GET(request: NextRequest, {params}: {params: Promise<{id: 
     }),
   );
 
-  return NextResponse.json<MoveLearningPokemonsResponse>(result);
+  return NextResponse.json<MoveLearningPokemonsResponse>(result, cacheHeaders(API_CACHE_CONTROL.VERSION_SCOPED_LIST));
 }

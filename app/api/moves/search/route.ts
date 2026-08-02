@@ -13,6 +13,7 @@ import {NextRequest, NextResponse} from "next/server";
 import {supabaseServer} from "@/lib/supabase/server";
 import {fetchTypeMap} from "@/lib/supabase/queryHelpers";
 import type {MoveSearchResponse, ApiErrorResponse} from "@/types/apiTypes";
+import {API_CACHE_CONTROL, cacheHeaders} from "@/lib/apiCache";
 
 interface MoveRow {
   id: number;
@@ -25,7 +26,7 @@ export async function GET(request: NextRequest) {
 
   // 빈 검색어 → 빈 배열 반환 (에러 아님)
   if (!q) {
-    return NextResponse.json<MoveSearchResponse>([]);
+    return NextResponse.json<MoveSearchResponse>([], cacheHeaders(API_CACHE_CONTROL.SEARCH));
   }
 
   // ── Step 1: korName에 검색어 포함하는 기술 조회 ──────────────
@@ -43,7 +44,7 @@ export async function GET(request: NextRequest) {
   }
 
   if (!moves || moves.length === 0) {
-    return NextResponse.json<MoveSearchResponse>([]);
+    return NextResponse.json<MoveSearchResponse>([], cacheHeaders(API_CACHE_CONTROL.SEARCH));
   }
 
   // ── Step 2: typeId → 한국어 타입명 맵 조회 ────────────────────
@@ -59,5 +60,5 @@ export async function GET(request: NextRequest) {
       korType: m.typeId != null ? (typeMap.get(m.typeId) ?? "???") : "???",
     }));
 
-  return NextResponse.json<MoveSearchResponse>(result);
+  return NextResponse.json<MoveSearchResponse>(result, cacheHeaders(API_CACHE_CONTROL.SEARCH));
 }

@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { fetchPokemonTypesMap } from "@/lib/supabase/queryHelpers";
 import type { PokemonSearchResponse, ApiErrorResponse } from "@/types/apiTypes";
+import {API_CACHE_CONTROL, cacheHeaders} from "@/lib/apiCache";
 
 interface PokemonRow {
   pokemonId: number;
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest) {
   const q = new URL(request.url).searchParams.get("q")?.trim() ?? "";
 
   if (!q) {
-    return NextResponse.json<PokemonSearchResponse>([]);
+    return NextResponse.json<PokemonSearchResponse>([], cacheHeaders(API_CACHE_CONTROL.SEARCH));
   }
 
   // ── Step 1: korName에 검색어 포함하는 포켓몬 조회 ──────────
@@ -42,7 +43,7 @@ export async function GET(request: NextRequest) {
   }
 
   if (!pokemons || pokemons.length === 0) {
-    return NextResponse.json<PokemonSearchResponse>([]);
+    return NextResponse.json<PokemonSearchResponse>([], cacheHeaders(API_CACHE_CONTROL.SEARCH));
   }
 
   // ── Step 2: 타입 정보 조회 ────────────────────────────────────
@@ -59,5 +60,5 @@ export async function GET(request: NextRequest) {
       spriteUrl: p.spriteUrl,
     }));
 
-  return NextResponse.json<PokemonSearchResponse>(result);
+  return NextResponse.json<PokemonSearchResponse>(result, cacheHeaders(API_CACHE_CONTROL.SEARCH));
 }

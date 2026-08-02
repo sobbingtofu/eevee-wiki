@@ -12,6 +12,7 @@ import {supabaseServer} from "@/lib/supabase/server";
 import {fetchTypeMap} from "@/lib/supabase/queryHelpers";
 import type {MoveBrief, ApiErrorResponse, DamageClass} from "@/types/apiTypes";
 import {pokemonTypeKor} from "@/types/pokemonDataType";
+import {API_CACHE_CONTROL, cacheHeaders} from "@/lib/apiCache";
 
 interface TB_MOVE_USED_COLUMNS {
   id: number;
@@ -63,5 +64,5 @@ export async function GET(_request: NextRequest, {params}: {params: Promise<{id:
     description: m.korDescription ?? "",
   };
 
-  return NextResponse.json<MoveBrief>(result);
+  return NextResponse.json<MoveBrief>(result, cacheHeaders(API_CACHE_CONTROL.DETAIL));
 }

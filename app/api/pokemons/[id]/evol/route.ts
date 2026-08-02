@@ -41,6 +41,7 @@ import type {
   EvolutionDetailEntry,
   ApiErrorResponse,
 } from "@/types/apiTypes";
+import {API_CACHE_CONTROL, cacheHeaders} from "@/lib/apiCache";
 
 // ── DB 로우 형태 ──────────────────────────────────────────────────
 interface EvolRow {
@@ -147,5 +148,5 @@ export async function GET(_request: NextRequest, {params}: {params: Promise<{id:
     .sort(([a], [b]) => a - b)
     .map(([chainLevel, chainData]) => ({chainLevel, chainData}));
 
-  return NextResponse.json<PokemonEvolutionChainResponse>(result);
+  return NextResponse.json<PokemonEvolutionChainResponse>(result, cacheHeaders(API_CACHE_CONTROL.DETAIL));
 }

@@ -14,6 +14,7 @@ import {NextRequest, NextResponse} from "next/server";
 import {supabaseServer} from "@/lib/supabase/server";
 import {fetchPokemonTypesMap} from "@/lib/supabase/queryHelpers";
 import type {PokemonDetail, PokemonAbilityInfo, StatEntry, EvStatEntry, ApiErrorResponse} from "@/types/apiTypes";
+import {API_CACHE_CONTROL, cacheHeaders} from "@/lib/apiCache";
 
 interface TB_POKEMONS_USED_COLUMNS {
   pokemonId: number;
@@ -140,5 +141,5 @@ export async function GET(_request: NextRequest, {params}: {params: Promise<{id:
     abilities,
   };
 
-  return NextResponse.json<PokemonDetail>(result);
+  return NextResponse.json<PokemonDetail>(result, cacheHeaders(API_CACHE_CONTROL.DETAIL));
 }

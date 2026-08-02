@@ -17,6 +17,7 @@
 import {NextResponse} from "next/server";
 import {fetchPlayableVersions} from "@/lib/supabase/queryHelpers";
 import type {VersionsResponse, ApiErrorResponse} from "@/types/apiTypes";
+import {API_CACHE_CONTROL, cacheHeaders} from "@/lib/apiCache";
 
 export async function GET() {
   const versions = await fetchPlayableVersions();
@@ -26,5 +27,5 @@ export async function GET() {
     return NextResponse.json<ApiErrorResponse>({error: "버전 목록을 불러오지 못했습니다."}, {status: 500});
   }
 
-  return NextResponse.json<VersionsResponse>(versions);
+  return NextResponse.json<VersionsResponse>(versions, cacheHeaders(API_CACHE_CONTROL.VERSION_LIST));
 }

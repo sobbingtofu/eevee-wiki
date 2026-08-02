@@ -21,6 +21,7 @@ import type {
   DamageClass,
   ApiErrorResponse,
 } from "@/types/apiTypes";
+import {API_CACHE_CONTROL, cacheHeaders} from "@/lib/apiCache";
 
 interface LearnRow {
   moveId: number;
@@ -71,7 +72,7 @@ export async function GET(request: NextRequest, {params}: {params: Promise<{id: 
   }
 
   if (!learnData || learnData.length === 0) {
-    return NextResponse.json<PokemonMovesResponse>([]);
+    return NextResponse.json<PokemonMovesResponse>([], cacheHeaders(API_CACHE_CONTROL.VERSION_SCOPED_LIST));
   }
 
   // Step 3: moveId별 학습방법 그룹화
@@ -134,5 +135,5 @@ export async function GET(request: NextRequest, {params}: {params: Promise<{id: 
       return aLevel - bLevel;
     });
 
-  return NextResponse.json<PokemonMovesResponse>(result);
+  return NextResponse.json<PokemonMovesResponse>(result, cacheHeaders(API_CACHE_CONTROL.VERSION_SCOPED_LIST));
 }

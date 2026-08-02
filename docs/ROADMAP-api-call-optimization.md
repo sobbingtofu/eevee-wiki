@@ -408,18 +408,40 @@ const [pokemonResult, typesMap] = await Promise.all([
 이 프로젝트의 API는 **전부 인증 없는 공개 데이터**이며, **모든 사용자에게 동일한 응답을
 반환한다.** 사용자별로 달라지는 응답이 없으므로 `public` 지시자를 안전하게 쓸 수 있다.
 
-### 작업
+### 작업 (완료, 2026-08-02)
 
-| 라우트                                     | 제안                                               | 근거                              |
-| ------------------------------------------ | -------------------------------------------------- | --------------------------------- |
-| `/api/versions`                            | `public, max-age=300, stale-while-revalidate=3600` | 서버 TTL과 동일하게 맞춤          |
-| `/api/moves/[id]/brief`·`detail`           | `public, max-age=3600`                             | 동기화 전까지 불변                |
-| `/api/pokemons/[id]`·`evol`                | `public, max-age=3600`                             | 〃                                |
-| `/api/moves/[id]/learning-pokemons`        | `public, max-age=600`                              | 〃 (버전별 결과)                  |
-| `/api/moves/search`·`/api/pokemons/search` | `public, max-age=60`                               | 타이핑 중 같은 검색어 재조회 흡수 |
-| `POST /api/search-learning-pokemons`       | **없음**                                           | POST는 브라우저 캐시 대상이 아님  |
+값은 `lib/apiCache.ts`에 모았다. 라우트마다 문자열을 적으면 나중에 조정할 때 흩어진다.
 
-작고 되돌리기 쉬우며 코드 구조를 건드리지 않는다.
+| 라우트                                          | 상수                  | 실측 헤더                                          |
+| ----------------------------------------------- | --------------------- | -------------------------------------------------- |
+| `/api/versions`                                 | `VERSION_LIST`        | `public, max-age=300, stale-while-revalidate=3600` |
+| `/api/moves/[id]/brief`·`detail`                | `DETAIL`              | `public, max-age=3600`                             |
+| `/api/pokemons/[id]`·`evol`                     | `DETAIL`              | `public, max-age=3600`                             |
+| `/api/pokemons/[id]/moves`                      | `VERSION_SCOPED_LIST` | `public, max-age=600`                              |
+| `/api/moves/[id]/learning-pokemons`             | `VERSION_SCOPED_LIST` | `public, max-age=600`                              |
+| `/api/moves/search`·`/api/pokemons/search`      | `SEARCH`              | `public, max-age=60`                               |
+| `POST /api/search-learning-pokemons`            | —                     | **없음** (POST는 브라우저 캐시 대상이 아님)        |
+
+> `/api/pokemons/[id]/moves`는 초판 표에 빠져 있었다. 성격이 `learning-pokemons`와 같아 함께 넣었다.
+
+### 에러 응답에는 붙이지 않았다
+
+**성공 응답(200)에만 헤더를 단다.** 일시적인 500을 한 시간 캐시하면
+서버가 복구된 뒤에도 브라우저가 계속 에러를 재생한다.
+4xx·5xx는 Next.js 기본값(no-store)으로 남겼고, `curl`로 확인했다
+(404·400 모두 `Cache-Control` 없음).
+
+검색어가 짧거나 결과가 0건인 경우처럼 **빈 배열을 돌려주는 것도 성공 응답**이므로
+캐시 대상에 포함했다.
+
+### max-age를 나눈 기준
+
+여기 데이터는 전부 PokeAPI 동기화 때만 바뀌므로 **변경 빈도로는 구분되지 않는다.**
+실제 기준은 "낡은 값이 얼마나 거슬리는가"다 — 버전 목록은 화면 전체가 매달려 있어 짧게(300s),
+상세는 한 시간 낡아도 지장이 없어 길게(3600s), 검색 자동완성은 타이핑 중
+같은 검색어 재조회만 흡수하면 되므로 아주 짧게(60s).
+`VERSION_SCOPED_LIST`의 600s는 응답이 커서 둔 보수적인 값이지,
+`DETAIL`과 성질이 달라서가 아니다.
 
 ---
 
