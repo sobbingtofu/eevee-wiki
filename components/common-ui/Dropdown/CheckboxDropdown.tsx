@@ -40,7 +40,8 @@ export function CheckboxDropdown<T extends string>({
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800/60 text-xs lg:text-sm font-bold text-white cursor-pointer whitespace-nowrap"
+        className="flex items-center gap-2 px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl bg-slate-800/60
+          text-[10px] sm:text-xs lg:text-sm font-bold text-white cursor-pointer whitespace-nowrap"
       >
         <span>{label}</span>
         <ChevronIcon className={`w-3 h-3 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`} />

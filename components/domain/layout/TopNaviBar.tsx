@@ -21,7 +21,7 @@ function TopNaviBar() {
       <Link href="/search-learning-pokemons" className="w-fit h-fit">
         <div className="flex justify-start items-center md:gap-4 gap-2">
           {/* 로고 */}
-          <div className="w-10 h-10 relative ">
+          <div className="sm:w-10 w-8 aspect-square relative ">
             <Image src="/icon/eevee01.png" alt="logo" fill className="object-cover" sizes="40px" priority />
           </div>
 
@@ -30,7 +30,7 @@ function TopNaviBar() {
         </div>
       </Link>
       {/* 네비게이션 메뉴 */}
-      <div className="flex justify-end items-center gap-6 md:gap-8 md:text-sm text-sm">
+      <div className="flex justify-end items-center gap-6 md:gap-8 md:text-sm sm:text-sm text-xs">
         <button
           className={getNavClassName(pathname.startsWith("/search-learning-pokemons"))}
           onClick={() => handleNavBtnClick("/search-learning-pokemons")}

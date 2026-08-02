@@ -16,9 +16,12 @@ function LearningPokemonCard({pokemon, moveNames}: {pokemon: LearningPokemonItem
   }
 
   return (
-    <div className="flex flex-col p-6 rounded-3xl bg-slate-900/40 border border-slate-800">
+    <div className="flex flex-col p-2 sm:p-6 sm:rounded-3xl rounded-xl bg-slate-900/40 border border-slate-800">
       {/* 스프라이트 이미지 */}
-      <div className="w-full aspect-square mb-5 rounded-2xl bg-[#f5f0e6] flex items-center justify-center overflow-hidden">
+      <div
+        className="sm:w-full w-[100%] sm:aspect-square aspect-auto sm:h-auto h-[80px]
+        sm:mb-5 mb-2.5 mx-auto sm:rounded-2xl rounded-lg bg-[#f5f0e6] flex items-center justify-center overflow-hidden"
+      >
         {pokemon.spriteUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={pokemon.spriteUrl} alt={pokemon.koreanName} className="w-4/5 h-4/5 object-contain" />
@@ -28,27 +31,27 @@ function LearningPokemonCard({pokemon, moveNames}: {pokemon: LearningPokemonItem
       </div>
 
       {/* 이름 */}
-      <h3 className="text-xl font-bold text-slate-100 text-center mb-3">{pokemon.koreanName}</h3>
+      <h3 className="text-lg sm:text-xl font-bold text-slate-100 text-center mb-1.5 sm:mb-3">{pokemon.koreanName}</h3>
 
       {/* 타입 */}
-      <div className="flex justify-center gap-2 mb-6">
+      <div className="flex justify-center gap-2 sm:mb-6 mb-3">
         {pokemon.korTypes.map((type) => (
           <TypeChip key={type} typeKor={type as pokemonTypeKor} />
         ))}
       </div>
 
       {/* 스탯 */}
-      <div className="grid grid-cols-3 gap-x-2 gap-y-4 mb-5">
+      <div className="grid grid-cols-3 gap-x-1 sm:gap-x-2 sm:gap-y-4 gap-y-2 mb-2 sm:mb-5">
         {STAT_META.map((stat) => (
           <div key={stat.key} className="text-center">
-            <p className="text-xs font-semibold text-slate-400 mb-1">{stat.label}</p>
-            <p className="text-base font-bold text-slate-100">{statMap[stat.key] ?? "-"}</p>
+            <p className="text-[10px] sm:text-xs font-semibold text-slate-400 mb-1">{stat.label}</p>
+            <p className="text-xs sm:text-base font-bold text-slate-100">{statMap[stat.key] ?? "-"}</p>
           </div>
         ))}
       </div>
 
       {/* 기술별 학습방법 */}
-      <div className="flex flex-col gap-3 pt-4 border-t border-slate-800">
+      <div className="flex flex-col gap-3 sm:pt-4 pt-1.5 border-t border-slate-800">
         {[...moveNames].map(([moveId, name]) => (
           <MoveLearningMethodsArea key={moveId} name={name} entries={pokemon.moveLearnInfo[String(moveId)] ?? []} />
         ))}
@@ -63,8 +66,8 @@ export default LearningPokemonCard;
 function MoveLearningMethodsArea({name, entries}: {name: string; entries: MoveLearnEntry[]}) {
   return (
     <div>
-      <p className="text-primary1 font-bold text-sm">{name}</p>
-      <p className="text-slate-400 text-xs mt-1">{formatLearnMethods(entries)}</p>
+      <p className="text-primary1 font-bold text-xs sm:text-sm">{name}</p>
+      <p className="text-slate-400 text-[10px] sm:text-xs mt-1">{formatLearnMethods(entries)}</p>
     </div>
   );
 }
