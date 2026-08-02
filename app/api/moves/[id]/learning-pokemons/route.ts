@@ -82,20 +82,22 @@ export async function GET(request: NextRequest, {params}: {params: Promise<{id: 
 
   const pokemonIds = [...learnMap.keys()];
 
-  // Step 4: 포켓몬 기본 정보 조회
-  const {data: pokemons, error: pokErr} = await supabaseServer
-    .from("TB_POKEMONS")
-    .select("pokemonId, korName, spriteUrl")
-    .in("pokemonId", pokemonIds)
-    .order("pokemonId");
+  // Step 4~5: 포켓몬 기본 정보 / 타입 정보 병렬 조회
+  const [pokemonResult, typesMap] = await Promise.all([
+    supabaseServer
+      .from("TB_POKEMONS")
+      .select("pokemonId, korName, spriteUrl")
+      .in("pokemonId", pokemonIds)
+      .order("pokemonId"),
+    fetchPokemonTypesMap(pokemonIds),
+  ]);
+
+  const {data: pokemons, error: pokErr} = pokemonResult;
 
   if (pokErr) {
     console.error("[moves/learning-pokemons] 포켓몬 정보 조회 오류:", pokErr.message);
     return NextResponse.json<ApiErrorResponse>({error: "포켓몬 정보 조회 중 오류가 발생했습니다."}, {status: 500});
   }
-
-  // Step 5: 포켓몬 타입 정보 조회
-  const typesMap = await fetchPokemonTypesMap(pokemonIds);
 
   // Step 6: 응답 조립
   const result: MoveLearningPokemonsResponse = (pokemons as TB_POKEMONS_USED_COLUMNS[]).map(
