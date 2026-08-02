@@ -19,8 +19,20 @@ interface MoveBucketContextValue {
 
 const MoveBucketContext = createContext<MoveBucketContextValue | null>(null);
 
-export function MoveBucketProvider({children}: {children: ReactNode}) {
-  const [moveBucketIds, setMoveBucketIds] = useState<number[]>([]);
+interface MoveBucketProviderProps {
+  children: ReactNode;
+  /**
+   * 바구니의 초기 내용 (첫 렌더에서만 반영됨)
+   *
+   * 뒤로가기로 돌아왔을 때 URL에 실려 있던 기술들을 다시 채워 넣는 용도임
+   * 이게 없으면 오른쪽에는 결과가 떠 있는데 왼쪽 바구니만 비어 보임
+   * 미리보기 정보는 없지만 `MoveBucketItem`이 알아서 상세를 받아오므로 표시에 문제 없음
+   */
+  initialMoveIds?: number[];
+}
+
+export function MoveBucketProvider({children, initialMoveIds = []}: MoveBucketProviderProps) {
+  const [moveBucketIds, setMoveBucketIds] = useState<number[]>(initialMoveIds);
   const [moveBucketPreviews, setMoveBucketPreviews] = useState<Record<number, MoveBucketPreview>>({});
 
   const addMoveBucketId = useCallback((item: MoveSearchItem) => {

@@ -3,6 +3,7 @@
 import {useCallback} from "react";
 import {useQueryClient} from "@tanstack/react-query";
 import SearchInput from "@/components/common-ui/SearchInput/SearchInput";
+import {useLearningSearchContext} from "@/components/domain/search-learning-pokemons/context/LearningSearchContext";
 import {prefetchMoveBrief} from "@/queries/moveQueries";
 import type {MoveSearchItem} from "@/types/apiTypes";
 import MoveBucket from "./MoveBucket";
@@ -53,8 +54,11 @@ function MoveSearchBucketSectionContent() {
 }
 
 function MoveSearchBucketSection() {
+  const {committedMoveIds} = useLearningSearchContext();
+
+  // 뒤로가기로 돌아온 경우 URL에 실려 있던 기술들로 바구니를 채워 둠 (첫 렌더에서만 반영됨)
   return (
-    <MoveBucketProvider>
+    <MoveBucketProvider initialMoveIds={committedMoveIds}>
       <MoveSearchBucketSectionContent />
     </MoveBucketProvider>
   );
