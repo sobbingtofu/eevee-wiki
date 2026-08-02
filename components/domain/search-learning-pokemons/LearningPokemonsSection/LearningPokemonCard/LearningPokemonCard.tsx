@@ -3,10 +3,13 @@ import {STAT_META} from "@/store/constantStore";
 import {LearningPokemonItem, MoveLearnEntry, StatEntry} from "@/types/apiTypes";
 import {pokemonTypeKor} from "@/types/pokemonDataType";
 import {formatLearnMethods} from "@/utils/pokemonDataUtils";
-import useMoveKoreanName from "@/hooks/useMoveKoreanName";
 
-/** 개별 포켓몬 카드 */
-function LearningPokemonCard({pokemon, moveIds}: {pokemon: LearningPokemonItem; moveIds: number[]}) {
+/**
+ * 개별 포켓몬 카드
+ *
+ * `moveNames`는 그릴 기술의 id와 이름을 순서대로 담은 Map
+ */
+function LearningPokemonCard({pokemon, moveNames}: {pokemon: LearningPokemonItem; moveNames: Map<number, string>}) {
   const statMap: Partial<Record<StatEntry["statName"], number>> = {};
   for (const stat of pokemon.stats) {
     statMap[stat.statName] = stat.statValue;
@@ -46,8 +49,8 @@ function LearningPokemonCard({pokemon, moveIds}: {pokemon: LearningPokemonItem; 
 
       {/* 기술별 학습방법 */}
       <div className="flex flex-col gap-3 pt-4 border-t border-slate-800">
-        {moveIds.map((moveId) => (
-          <MoveLearningMethodsArea key={moveId} moveId={moveId} entries={pokemon.moveLearnInfo[String(moveId)] ?? []} />
+        {[...moveNames].map(([moveId, name]) => (
+          <MoveLearningMethodsArea key={moveId} name={name} entries={pokemon.moveLearnInfo[String(moveId)] ?? []} />
         ))}
       </div>
     </div>
@@ -57,8 +60,7 @@ function LearningPokemonCard({pokemon, moveIds}: {pokemon: LearningPokemonItem; 
 export default LearningPokemonCard;
 
 /** 카드 하단의 기술별 학습방법 행 */
-function MoveLearningMethodsArea({moveId, entries}: {moveId: number; entries: MoveLearnEntry[]}) {
-  const name = useMoveKoreanName(moveId);
+function MoveLearningMethodsArea({name, entries}: {name: string; entries: MoveLearnEntry[]}) {
   return (
     <div>
       <p className="text-primary1 font-bold text-sm">{name}</p>

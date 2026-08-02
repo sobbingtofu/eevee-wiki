@@ -8,7 +8,7 @@
  *
  */
 
-import {keepPreviousData, useQuery, type QueryClient} from "@tanstack/react-query";
+import {keepPreviousData, useQueries, useQuery, type QueryClient} from "@tanstack/react-query";
 import type {
   ApiErrorResponse,
   MoveBrief,
@@ -36,8 +36,7 @@ export const MOVE_QUERY_KEYS = {
   search: (q: string) => ["moves", "search", q] as const,
   brief: (id: number) => ["moves", "brief", id] as const,
   detail: (id: number) => ["moves", "detail", id] as const,
-  learningPokemons: (id: number, versionName: string) =>
-    ["moves", "learning-pokemons", id, versionName] as const,
+  learningPokemons: (id: number, versionName: string) => ["moves", "learning-pokemons", id, versionName] as const,
 } as const;
 
 /**
@@ -89,6 +88,33 @@ function moveBriefQueryOptions(id: number) {
     queryFn: () => apiFetch<MoveBrief>(`/api/moves/${id}/brief`),
     staleTime: 1000 * 60 * 10, // 10분 캐시
   };
+}
+
+/**
+ * 여러 기술의 국문명을 한 번에 조회해 `Map<moveId, 국문명>`반환
+ *
+ * - 결과 목록처럼 **같은 기술 이름이 수백 번 반복 표시되는 화면**에서 사용함
+ * - 각 카드가 개별적으로 조회 시 네트워크 요청은 합쳐지지만 `useQuery` 구독이 (포켓몬 수 × 기술 수)만큼 생기는 비효율 제거하기 위함임
+ * - 부모에서 한 번 조회해 내려주면 구독이 기술 수만큼으로 축소됨
+ *
+ * - 아직 받아오지 못한 기술은 맵에 담기지 않음
+ * - 표시용 대체 문구는 호출부가 정함
+ *
+ * @example
+ * const moveNames = useMoveNames([7, 63]);
+ * moveNames.get(63); // "파괴광선" (아직 로딩 중이면 undefined)
+ */
+export function useMoveNames(moveIds: number[]): Map<number, string> {
+  return useQueries({
+    queries: moveIds.filter((id) => id > 0).map((id) => moveBriefQueryOptions(id)),
+    combine: (results) => {
+      const names = new Map<number, string>();
+      for (const {data} of results) {
+        if (data) names.set(data.id, data.koreanName);
+      }
+      return names;
+    },
+  });
 }
 
 /**

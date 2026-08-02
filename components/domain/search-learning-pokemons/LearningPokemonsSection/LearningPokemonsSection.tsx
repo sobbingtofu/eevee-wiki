@@ -4,7 +4,9 @@ import {useMemo, useRef, useState, type CSSProperties, type PointerEvent} from "
 import {Loader} from "@/components/common-ui/Loader/Loader";
 import {useLearningSearchContext} from "@/components/domain/search-learning-pokemons/context/LearningSearchContext";
 import {useSearchLearningPokemonsQuery} from "@/queries/searchLearningPokemonsQueries";
+import {useMoveNames} from "@/queries/moveQueries";
 import {useClickOutside} from "@/hooks/useClickOutside";
+import {useInfiniteScrollSentinel} from "@/hooks/useInfiniteScrollSentinel";
 
 import LearningPokemonCard from "./LearningPokemonCard/LearningPokemonCard";
 import SearchControls from "./SearchControls/SearchControls";
@@ -13,6 +15,14 @@ import SearchMoveChip from "./SearchMoveChip/SearchMoveChip";
 // 바텀시트 닫힘 상태에서 화면 하단에 남겨둘 핸들 영역 높이(px)
 // (아래 className의 h-12 / translate-y-[calc(85dvh_-_48px)] 값과 반드시 일치)
 const SHEET_HANDLE_PEEK_PX = 48;
+
+/**
+ * 기술 이름 표기 — 아직 받아오지 못한 기술은 id로 대체
+ * `useMoveNames`는 받아온 것만 담아 주므로, 대체 문구는 표시하는 쪽인 여기서만 정해야 함
+ */
+function moveNameLabel(moveNames: Map<number, string>, moveId: number): string {
+  return moveNames.get(moveId) ?? `기술 #${moveId}`;
+}
 
 function LearningPokemonsSection() {
   const {
@@ -27,19 +37,45 @@ function LearningPokemonsSection() {
     setBottomSheetOpen,
   } = useLearningSearchContext();
 
-  const {data, isLoading, isFetching, isError} = useSearchLearningPokemonsQuery({
-    moveIds: committedMoveIds,
-    versionName,
-    sortKey,
-    sortDirection,
-    learnMethods,
-  });
+  const {data, isLoading, isFetching, isError, fetchNextPage, hasNextPage, isFetchingNextPage} =
+    useSearchLearningPokemonsQuery({
+      moveIds: committedMoveIds,
+      versionName,
+      sortKey,
+      sortDirection,
+      learnMethods,
+    });
+
+  // 지금까지 불러온 모든 페이지를 이어붙인 목록
+  const allLearningPokemons = useMemo(() => data?.pages.flatMap((page) => page.items) ?? [], [data]);
+
+  // 헤더에 표시할 마릿수는 "불러온 개수"가 아니라 조건을 만족하는 "전체 마릿수"임
+  // 모든 페이지가 같은 값을 담고 있으므로 첫 페이지에서 읽으면 됨
+  const totalCount = data?.pages[0]?.totalCount ?? 0;
+
+  // 감지 요소가 화면에 들어오면 다음 24개를 불러옴
+  // 마지막 페이지에서는 감지 요소가 계속 보이는 채로 남으므로 hasNextPage 가드가 필수임
+  const sentinelRef = useInfiniteScrollSentinel<HTMLDivElement>(fetchNextPage, hasNextPage && !isFetchingNextPage);
 
   // 카드에 넘길 기술 id 목록은 응답 데이터 기준(표시 데이터와 항상 일치)
   const moveIdsForCards = useMemo(() => {
-    if (!data || data.length === 0) return [];
-    return Object.keys(data[0].moveLearnInfo).map(Number);
-  }, [data]);
+    const first = allLearningPokemons[0];
+    if (!first) return [];
+    return Object.keys(first.moveLearnInfo).map(Number);
+  }, [allLearningPokemons]);
+
+  // 기술 이름은 여기서 한 번만 조회해 props를 통해 아래로 내림
+  const moveIdsToName = useMemo(
+    () => [...new Set([...committedMoveIds, ...moveIdsForCards])],
+    [committedMoveIds, moveIdsForCards],
+  );
+  const moveNameMap = useMoveNames(moveIdsToName);
+
+  // 카드가 그려질 순서 그대로의 Map
+  const moveNamesForCards = useMemo(
+    () => new Map(moveIdsForCards.map((id) => [id, moveNameLabel(moveNameMap, id)])),
+    [moveIdsForCards, moveNameMap],
+  );
 
   // ── 바텀시트 핸들 드래그 ──────────────────────────────────
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -108,20 +144,27 @@ function LearningPokemonsSection() {
       return <GuideErrorMsg tone="error">검색 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요</GuideErrorMsg>;
     }
     // 5) 결과 없음
-    if (!data || data.length === 0) {
+    if (allLearningPokemons.length === 0) {
       return <GuideErrorMsg>조건을 모두 만족하는 포켓몬이 없습니다</GuideErrorMsg>;
     }
-    // 6) 결과 그리드
+    // 6) 결과 그리드 + 무한스크롤 감지 요소
     return (
-      <div className="grid xl:grid-cols-4 lg:grid-cols-3 md:grid-cols-2 grid-cols-2 gap-5">
-        {data.map((pokemon) => (
-          <LearningPokemonCard key={pokemon.pokemonId} pokemon={pokemon} moveIds={moveIdsForCards} />
-        ))}
-      </div>
+      <>
+        <div className="grid xl:grid-cols-4 lg:grid-cols-3 md:grid-cols-2 grid-cols-2 gap-5">
+          {allLearningPokemons.map((pokemon) => (
+            <LearningPokemonCard key={pokemon.pokemonId} pokemon={pokemon} moveNames={moveNamesForCards} />
+          ))}
+        </div>
+
+        {/* 다음 페이지 감지용 — 눈에 보이지 않고, 화면에 들어오면 24개를 더 불러옴 */}
+        <div ref={sentinelRef} className="h-px w-full" aria-hidden />
+
+        {isFetchingNextPage && <p className="py-6 text-center text-sm text-slate-400">데이터를 가져오는 중입니다</p>}
+      </>
     );
   };
 
-  const resultCount = hasSearched && data ? data.length : null;
+  const resultCount = hasSearched && data ? totalCount : null;
 
   return (
     <div
@@ -153,7 +196,7 @@ function LearningPokemonsSection() {
             </h2>
             <div className="flex flex-wrap gap-2 mt-3">
               {committedMoveIds.map((moveId) => (
-                <SearchMoveChip key={moveId} moveId={moveId} />
+                <SearchMoveChip key={moveId} name={moveNameLabel(moveNameMap, moveId)} />
               ))}
             </div>
           </div>
@@ -165,8 +208,10 @@ function LearningPokemonsSection() {
         {renderBody()}
       </div>
 
-      {/* 검색 요청 중 오버레이 (버튼 클릭·필터·정렬 변경으로 인한 fetch 모두 포함) */}
-      {isFetching && (
+      {/* 검색 요청 중 오버레이 (버튼 클릭·필터·정렬 변경으로 인한 fetch)
+          다음 페이지 로딩은 제외한다 — 그때는 하단 "데이터를 가져오는 중입니다"가 담당하고,
+          여기서 걸러내지 않으면 스크롤할 때마다 목록 전체가 덮인다. */}
+      {isFetching && !isFetchingNextPage && (
         <div className="absolute inset-0 z-30 flex items-center justify-center bg-slate-950/50">
           <Loader />
         </div>

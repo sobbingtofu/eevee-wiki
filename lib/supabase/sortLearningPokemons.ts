@@ -6,7 +6,17 @@
  * - 동점 시 pokemonId 오름차순으로 안정 정렬 (방향과 무관)
  */
 import {SORT_KEY_STAT_FIELDS} from "@/types/apiTypes";
-import type {LearningPokemonItem, PokemonSortKey, SortDirection, StatEntry} from "@/types/apiTypes";
+import type {PokemonSortKey, SortDirection, StatEntry} from "@/types/apiTypes";
+
+/**
+ * 정렬에 실제로 필요한 최소 데이터들
+ * - 페이지네이션 때문에 응답을 조립하기 전, 가벼운 행 상태에서 정렬 수행함
+ */
+export interface SortableLearningPokemon {
+  pokemonId: number;
+  koreanName: string;
+  stats: StatEntry[];
+}
 
 /** stats 배열에서 지정한 필드들의 값 합산 (누락 필드는 0) */
 function sumStats(stats: StatEntry[], fields: StatEntry["statName"][]): number {
@@ -14,11 +24,11 @@ function sumStats(stats: StatEntry[], fields: StatEntry["statName"][]): number {
   return fields.reduce((sum, field) => sum + (valueByName.get(field) ?? 0), 0);
 }
 
-export function sortLearningPokemons(
-  items: LearningPokemonItem[],
+export function sortLearningPokemons<T extends SortableLearningPokemon>(
+  items: T[],
   sortKey: PokemonSortKey,
   sortDirection: SortDirection,
-): LearningPokemonItem[] {
+): T[] {
   const directionFactor = sortDirection === "asc" ? 1 : -1;
 
   return [...items].sort((a, b) => {

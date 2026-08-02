@@ -196,14 +196,30 @@ interface SearchLearningPokemonsResponse {
 | `hooks/useInfiniteScrollSentinel.ts`        | **신규** — ref를 돌려주고 진입 시 콜백 호출                 |
 | `components/.../LearningPokemonsSection.tsx` | 감지 요소·하단 문구 배치, 오버레이 조건 수정, 헤더 카운트를 `totalCount`로 |
 
-### 기대 효과
+### 결과 (실측 완료, 2026-08-02)
 
-|                        | 현재                | 이후                    |
-| ---------------------- | ------------------- | ----------------------- |
-| 최초 응답 크기 (432건) | 241KB               | **약 14KB**             |
-| 최초 응답 시간         | 440ms               | 대폭 감소 (재측정 필요) |
-| 정렬 변경 시 전송량    | 241KB               | **24건치**              |
-| 정렬 조건별 캐시       | 8벌 × 전체 데이터   | 8벌 × 본 페이지까지만   |
+|                        | 이전              | 이후                   |
+| ---------------------- | ----------------- | ---------------------- |
+| 최초 응답 크기 (432건) | 241KB             | **13.6KB** (−94%)      |
+| 최초 응답 시간         | 440ms             | **248ms** (중앙값)     |
+| 정렬 변경 시 전송량    | 241KB             | **13.6KB**             |
+| 정렬 조건별 캐시       | 8벌 × 전체 데이터 | 8벌 × 본 페이지까지만  |
+| DB 왕복                | 2라운드           | 3라운드 (전송량과 교환) |
+
+**응답 시간 개선폭은 크기 개선폭에 못 미친다.** 전송량이 1/18이 됐는데 시간은 절반 남짓이다.
+남은 시간은 전송이 아니라 **Step 1~3**(교집합 계산 + 자격 포켓몬 전원의 이름·스탯 조회)에 있고,
+이 부분은 페이지네이션과 무관하게 전량을 봐야 하므로 줄지 않았다.
+왕복이 한 라운드 늘어난 것도 일부 상쇄했다.
+
+> 여기서 더 줄이려면 정렬을 Postgres로 내려 Step 3까지 24행으로 만들어야 한다.
+> "하지 않기로 한 것" 참조 — 지금 착수할 근거는 없다.
+
+### 측정했으나 손대지 않은 것
+
+정렬 방식별 응답 시간에 차이가 있는지 확인했다. `localeCompare(a, b, "ko")`를
+비교마다 호출하는 것이 느릴 것으로 의심해 `Intl.Collator` 재사용과 비교했는데,
+**432건 정렬 기준 차이가 1.2ms**였다. 응답 시간 차이(name 248ms / hp 251ms)는
+전부 네트워크 노이즈였다. 근거가 없으므로 고치지 않았다.
 
 ### 전제 (다르면 알려주실 것)
 
@@ -264,14 +280,25 @@ LearningPokemonsSection  ← committedMoveIds를 안다
 **프로드릴링이 늘어나는 게 아니라, 리프가 전역 캐시를 들여다보던 간접층이 하나 없어진다.**
 유지보수 비용은 증가가 아니라 소폭 감소 쪽이다.
 
-### 작업 내용
+### 작업 내용 (완료, 2026-08-02)
 
-| 파일                                          | 변경                                                          |
-| --------------------------------------------- | ------------------------------------------------------------- |
-| `components/.../LearningPokemonsSection.tsx`  | `useQueries`로 `committedMoveIds`의 brief를 모아 `Map` 생성    |
-| `components/.../LearningPokemonCard.tsx`      | prop `moveIds` → `moveNames: Map<number, string>`, 하위 함수도 |
-| `components/.../SearchMoveChip.tsx`           | `moveId` → `name: string` prop                                |
-| `hooks/useMoveKoreanName.ts`                  | 삭제                                                          |
+| 파일                                         | 변경                                                          |
+| -------------------------------------------- | ------------------------------------------------------------- |
+| `queries/moveQueries.tsx`                    | `useMoveNames(ids)` 신규 — `useQueries` + `combine`으로 `Map` 반환 |
+| `components/.../LearningPokemonsSection.tsx` | 이름 조회를 여기서 한 번, 카드/칩에 문자열로 내림             |
+| `components/.../LearningPokemonCard.tsx`     | prop `moveIds` → `moveNames: Map<number, string>`, 하위 함수도 |
+| `components/.../SearchMoveChip.tsx`          | `moveId` → `name: string` prop                                |
+| `hooks/useMoveKoreanName.ts`                 | **삭제**                                                      |
+
+**조회 대상은 `committedMoveIds` ∪ `moveIdsForCards`의 합집합으로 했다.**
+칩은 `committedMoveIds`를, 카드는 응답에서 역산한 `moveIdsForCards`를 그리는데,
+기술을 담고 아직 재검색하기 전에는 이 둘이 잠시 어긋난다.
+`committedMoveIds`만 조회하면 그 순간 카드에 `기술 #63` 폴백이 스쳐 지나갈 수 있다.
+(기존에는 리프가 각자 조회했으므로 이 문제가 없었다 — 끌어올리면서 새로 생긴 조건이다.)
+
+**대체 문구(`기술 #63`)는 표시하는 쪽 한 곳에만 뒀다.**
+`useMoveNames`는 받아온 것만 담아 돌려주고, 없는 값의 표기는 `moveNameLabel()`이 정한다.
+훅과 화면 양쪽에 폴백이 흩어지면 나중에 문구를 바꿀 때 한쪽만 고치게 된다.
 
 `useMoveBrief` 자체는 기술 바구니(`MoveBucket`)에서 계속 쓰이므로 그대로 둔다.
 

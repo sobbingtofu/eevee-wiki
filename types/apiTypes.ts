@@ -370,7 +370,23 @@ export interface SearchLearningPokemonsRequest {
   sortDirection: SortDirection;
   /** 배우는 방법 필터 (1개 이상, OR 방식 / 자격 판정에만 사용) */
   learnMethods: LearnMethodFilter[];
+  /**
+   * 0부터 시작하는 페이지 번호 (무한스크롤)
+   *
+   * 클라이언트는 `useInfiniteQuery`의 pageParam으로 관리하므로
+   * queryKey에는 들어가지 않는다 — 같은 검색 조건의 모든 페이지가 한 캐시에 누적된다.
+   */
+  page: number;
 }
+
+/**
+ * 한 페이지에 담기는 포켓몬 수.
+ *
+ * 결과 그리드는 뷰포트 너비에 따라 한 행에 2·3·4개가 되므로,
+ * 세 경우 모두 딱 떨어지도록 공배수인 24를 쓴다 (마지막 행이 비지 않는다).
+ * 서버·클라이언트가 같은 값을 봐야 하므로 여기에 둔다.
+ */
+export const SEARCH_LEARNING_POKEMONS_PAGE_SIZE = 24;
 
 /**
  * POST /api/search-learning-pokemons 응답 — 개별 포켓몬 항목
@@ -387,7 +403,24 @@ export interface LearningPokemonItem {
   moveLearnInfo: Record<string, MoveLearnEntry[]>;
 }
 
-export type SearchLearningPokemonsResponse = LearningPokemonItem[];
+/**
+ * POST /api/search-learning-pokemons 응답 (페이지 단위)
+ *
+ * 배열이 아니라 객체인 이유는 `totalCount` 때문이다 —
+ * 헤더의 "배우는 포켓몬 432"는 이번 페이지에 몇 마리가 왔는지가 아니라
+ * 조건을 만족하는 전체 마릿수를 표시해야 한다.
+ * 나머지 필드도 전부 같은 자원에 대한 페이지네이션 메타데이터다.
+ */
+export interface SearchLearningPokemonsResponse {
+  /** 이번 페이지의 포켓몬 목록 (정렬된 전체 순서에서 잘라낸 구간) */
+  items: LearningPokemonItem[];
+  /** 조건을 만족하는 전체 마릿수 (페이지와 무관, 헤더 표기용) */
+  totalCount: number;
+  /** 이번 응답의 페이지 번호 (요청과 동일, 다음 pageParam 계산용) */
+  page: number;
+  /** 다음 페이지가 존재하는지 — false면 감지 요소가 더 이상 요청하지 않는다 */
+  hasNextPage: boolean;
+}
 
 // ─────────────────────────────────────────
 // 진화 체인 타입
